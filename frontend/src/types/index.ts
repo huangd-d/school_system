@@ -32,6 +32,7 @@ export interface LoginResponse {
 export interface UserInfo {
   id: number
   username: string
+  phone: string
   role: Role
   campus_id: number
 }
@@ -67,6 +68,7 @@ export interface CampusUpdateForm {
 export interface User {
   id: number
   username: string
+  phone: string
   role: Role
   campus_id: number
   status: 'active' | 'disabled'
@@ -77,12 +79,15 @@ export interface User {
 export interface UserCreateForm {
   username: string
   password: string
+  phone: string
   role: Role
   campus_id: number
 }
 
 /** 编辑账户请求 — 对齐后端 UpdateUserReq */
 export interface UserUpdateForm {
+  username?: string
+  phone?: string
   role: Role
   campus_id: number
 }

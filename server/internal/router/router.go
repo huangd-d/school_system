@@ -86,6 +86,7 @@ func Register(
 		authGroup.POST("/users", userH.Create)
 		authGroup.PUT("/users/:id", userH.Update)
 		authGroup.PUT("/users/:id/disable", userH.Disable)
+		authGroup.PUT("/users/:id/enable", userH.Enable)
 		authGroup.PUT("/users/:id/reset-pwd", userH.ResetPassword)
 
 		// 物资

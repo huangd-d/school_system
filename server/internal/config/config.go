@@ -39,9 +39,10 @@ type CORSConfig struct {
 
 // SeedConfig 种子数据配置（首次启动时自动创建）
 type SeedConfig struct {
-	DefaultHQName          string // 默认总部校区名称
-	DefaultAdminUsername   string // 默认总部管理员用户名
-	DefaultAdminPassword   string // 默认总部管理员密码
+	DefaultHQName        string // 默认总部校区名称
+	DefaultAdminUsername string // 默认总部管理员用户名
+	DefaultAdminPassword string // 默认总部管理员密码
+	DefaultAdminPhone    string // 默认总部管理员手机号
 }
 
 // Load 加载配置（环境变量 > .env 文件 > 配置文件 > 默认值）
@@ -64,6 +65,7 @@ func Load() *Config {
 	viper.BindEnv("seed.default_hq_name", "SEED_HQ_NAME")
 	viper.BindEnv("seed.default_admin_username", "SEED_ADMIN_USERNAME")
 	viper.BindEnv("seed.default_admin_password", "SEED_ADMIN_PASSWORD")
+	viper.BindEnv("seed.default_admin_phone", "SEED_ADMIN_PHONE")
 
 	// 默认值
 	viper.SetDefault("server.port", "8080")
@@ -74,6 +76,7 @@ func Load() *Config {
 	viper.SetDefault("seed.default_hq_name", "总部")
 	viper.SetDefault("seed.default_admin_username", "lfc")
 	viper.SetDefault("seed.default_admin_password", "15061805300")
+	viper.SetDefault("seed.default_admin_phone", "15061805300")
 
 	viper.ReadInConfig()
 
@@ -95,6 +98,7 @@ func Load() *Config {
 			DefaultHQName:        viper.GetString("seed.default_hq_name"),
 			DefaultAdminUsername: viper.GetString("seed.default_admin_username"),
 			DefaultAdminPassword: viper.GetString("seed.default_admin_password"),
+			DefaultAdminPhone:    viper.GetString("seed.default_admin_phone"),
 		},
 	}
 }

@@ -1,57 +1,20 @@
 import { useState } from 'react'
-import {
-  Table,
-  Button,
-  Space,
-  Tag,
-  Modal,
-  Form,
-  Input,
-  Select,
-  message,
-  Popconfirm,
-} from 'antd'
+import { Table, Button, Space, Tag, Popconfirm, message } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import {
-  listCampuses,
-  createCampus,
-  updateCampus,
-  deleteCampus,
-} from '@/api/campus'
-import type { Campus, CampusCreateForm, CampusUpdateForm, CampusType } from '@/types'
+import { listCampuses, deleteCampus } from '@/api/campus'
+import type { Campus, CampusType } from '@/types'
+import CampusFormModal from './CampusFormModal'
 
 export default function CampusPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<Campus | null>(null)
-  const [form] = Form.useForm()
   const queryClient = useQueryClient()
 
   // 后端返回平铺数组，无分页
   const { data: campuses, isLoading } = useQuery({
     queryKey: ['campuses'],
     queryFn: listCampuses,
-  })
-
-  const createMutation = useMutation({
-    mutationFn: createCampus,
-    onSuccess: () => {
-      message.success('校区创建成功')
-      queryClient.invalidateQueries({ queryKey: ['campuses'] })
-      closeModal()
-    },
-    onError: (e: Error) => message.error(e.message),
-  })
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: CampusUpdateForm }) =>
-      updateCampus(id, data),
-    onSuccess: () => {
-      message.success('校区更新成功')
-      queryClient.invalidateQueries({ queryKey: ['campuses'] })
-      closeModal()
-    },
-    onError: (e: Error) => message.error(e.message),
   })
 
   const deleteMutation = useMutation({
@@ -63,36 +26,19 @@ export default function CampusPage() {
     onError: (e: Error) => message.error(e.message),
   })
 
-  const closeModal = () => {
-    setModalOpen(false)
-    setEditing(null)
-    form.resetFields()
+  const refreshList = () => {
+    queryClient.invalidateQueries({ queryKey: ['campuses'] })
   }
 
   const openCreate = () => {
     setEditing(null)
-    form.resetFields()
     setModalOpen(true)
   }
 
   const openEdit = (record: Campus) => {
     setEditing(record)
-    form.setFieldsValue(record)
     setModalOpen(true)
   }
-
-  const handleSubmit = () => {
-    form.validateFields().then((values: CampusCreateForm) => {
-      if (editing) {
-        // 编辑时仅传 name
-        updateMutation.mutate({ id: editing.id, data: { name: values.name } })
-      } else {
-        createMutation.mutate(values)
-      }
-    })
-  }
-
-  const typeLabel = (t: CampusType) => (t === 'hq' ? '总部' : '普通')
 
   const columns = [
     { title: 'ID', dataIndex: 'id', width: 60 },
@@ -147,44 +93,12 @@ export default function CampusPage() {
         pagination={false}
       />
 
-      <Modal
-        title={editing ? '编辑校区' : '新建校区'}
+      <CampusFormModal
         open={modalOpen}
-        onOk={handleSubmit}
-        onCancel={closeModal}
-        confirmLoading={createMutation.isPending || updateMutation.isPending}
-        destroyOnClose
-      >
-        <Form form={form} layout="vertical" className="mt-4">
-          <Form.Item
-            name="name"
-            label="名称"
-            rules={[{ required: true, message: '请输入校区名称' }]}
-          >
-            <Input />
-          </Form.Item>
-          {/* 新建时可选择类型，编辑时仅显示不可改 */}
-          {editing ? (
-            <Form.Item label="类型">
-              <Input value={typeLabel(editing.type)} disabled />
-            </Form.Item>
-          ) : (
-            <Form.Item
-              name="type"
-              label="类型"
-              rules={[{ required: true, message: '请选择类型' }]}
-              initialValue="normal"
-            >
-              <Select
-                options={[
-                  { label: '总部', value: 'hq' },
-                  { label: '普通校区', value: 'normal' },
-                ]}
-              />
-            </Form.Item>
-          )}
-        </Form>
-      </Modal>
+        campus={editing}
+        onClose={() => setModalOpen(false)}
+        onSuccess={refreshList}
+      />
     </div>
   )
 }

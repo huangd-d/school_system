@@ -1,6 +1,7 @@
 package user
 
 import (
+	"context"
 	"strconv"
 
 	"school-system/internal/model"
@@ -15,11 +16,14 @@ import (
 type CreateUserReq struct {
 	Username string `json:"username" binding:"required"`
 	Password string `json:"password" binding:"required"`
+	Phone    string `json:"phone"`
 	Role     string `json:"role" binding:"required,oneof=hq_admin campus_operator activity_contact"`
 	CampusID uint   `json:"campus_id" binding:"required,min=1"`
 }
 
 type UpdateUserReq struct {
+	Username string `json:"username"`
+	Phone    string `json:"phone"`
 	Role     string `json:"role" binding:"required,oneof=hq_admin campus_operator activity_contact"`
 	CampusID uint   `json:"campus_id" binding:"required,min=1"`
 }
@@ -33,6 +37,7 @@ type ResetPasswordReq struct {
 type UserResp struct {
 	ID        uint   `json:"id"`
 	Username  string `json:"username"`
+	Phone     string `json:"phone"`
 	Role      string `json:"role"`
 	CampusID  uint   `json:"campus_id"`
 	Status    string `json:"status"`
@@ -60,6 +65,7 @@ func toResp(u model.User) UserResp {
 	return UserResp{
 		ID:        u.ID,
 		Username:  u.Username,
+		Phone:     u.Phone,
 		Role:      u.Role,
 		CampusID:  u.CampusID,
 		Status:    u.Status,
@@ -67,13 +73,24 @@ func toResp(u model.User) UserResp {
 	}
 }
 
+// ---- ServiceInterface（handler 依赖的服务接口，便于测试时注入 mock）----
+
+type ServiceInterface interface {
+	List(ctx context.Context, operatorRole string, operatorCampusID uint) ([]model.User, error)
+	Create(ctx context.Context, username, password, phone, role string, campusID uint) (*model.User, error)
+	Update(ctx context.Context, id uint, username, phone, role string, campusID uint) (*model.User, error)
+	Disable(ctx context.Context, id uint, operatorID uint) error
+	Enable(ctx context.Context, id uint) error
+	ResetPassword(ctx context.Context, id uint, newPassword string) error
+}
+
 // ---- Handler ----
 
 type Handler struct {
-	svc *Service
+	svc ServiceInterface
 }
 
-func NewHandler(svc *Service) *Handler {
+func NewHandler(svc ServiceInterface) *Handler {
 	return &Handler{svc: svc}
 }
 
@@ -101,7 +118,7 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
-	user, err := h.svc.Create(c.Request.Context(), req.Username, req.Password, req.Role, req.CampusID)
+	user, err := h.svc.Create(c.Request.Context(), req.Username, req.Password, req.Phone, req.Role, req.CampusID)
 	if err != nil {
 		response.Err(c, err)
 		return
@@ -124,7 +141,7 @@ func (h *Handler) Update(c *gin.Context) {
 		return
 	}
 
-	user, err := h.svc.Update(c.Request.Context(), uint(id), req.Role, req.CampusID)
+	user, err := h.svc.Update(c.Request.Context(), uint(id), req.Username, req.Phone, req.Role, req.CampusID)
 	if err != nil {
 		response.Err(c, err)
 		return
@@ -143,6 +160,22 @@ func (h *Handler) Disable(c *gin.Context) {
 
 	operatorID, _, _ := getOperator(c)
 	if err := h.svc.Disable(c.Request.Context(), uint(id), operatorID); err != nil {
+		response.Err(c, err)
+		return
+	}
+
+	response.OK(c, nil)
+}
+
+// Enable 启用账户
+func (h *Handler) Enable(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		response.Err(c, apperror.ErrInvalidParam)
+		return
+	}
+
+	if err := h.svc.Enable(c.Request.Context(), uint(id)); err != nil {
 		response.Err(c, err)
 		return
 	}

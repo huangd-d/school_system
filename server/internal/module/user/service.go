@@ -47,7 +47,7 @@ func (s *Service) List(ctx context.Context, operatorRole string, operatorCampusI
 }
 
 // Create 新建账户
-func (s *Service) Create(ctx context.Context, username, password, role string, campusID uint) (*model.User, error) {
+func (s *Service) Create(ctx context.Context, username, password, phone, role string, campusID uint) (*model.User, error) {
 	// 参数校验
 	if username == "" {
 		return nil, apperror.ErrUserUsernameEmpty
@@ -57,6 +57,12 @@ func (s *Service) Create(ctx context.Context, username, password, role string, c
 	}
 	if password == "" {
 		return nil, apperror.ErrUserPasswordEmpty
+	}
+	if phone == "" {
+		return nil, apperror.ErrUserPhoneEmpty
+	}
+	if len(phone) > 20 {
+		return nil, apperror.ErrUserPhoneTooLong
 	}
 	if role != model.RoleHQAdmin && role != model.RoleCampusOperator && role != model.RoleActivityContact {
 		return nil, apperror.ErrUserRoleInvalid
@@ -92,6 +98,7 @@ func (s *Service) Create(ctx context.Context, username, password, role string, c
 	user := &model.User{
 		Username:     username,
 		PasswordHash: string(hash),
+		Phone:        phone,
 		Role:         role,
 		CampusID:     campusID,
 		Status:       model.UserStatusActive,
@@ -104,8 +111,8 @@ func (s *Service) Create(ctx context.Context, username, password, role string, c
 	return user, nil
 }
 
-// Update 编辑账户（修改角色和校区）
-func (s *Service) Update(ctx context.Context, id uint, role string, campusID uint) (*model.User, error) {
+// Update 编辑账户（修改用户名、手机号、角色和校区）
+func (s *Service) Update(ctx context.Context, id uint, username, phone, role string, campusID uint) (*model.User, error) {
 	if role != model.RoleHQAdmin && role != model.RoleCampusOperator && role != model.RoleActivityContact {
 		return nil, apperror.ErrUserRoleInvalid
 	}
@@ -128,6 +135,27 @@ func (s *Service) Update(ctx context.Context, id uint, role string, campusID uin
 	}
 	if role != model.RoleHQAdmin && campus.Type == model.CampusTypeHQ {
 		return nil, apperror.ErrUserNormalCampus
+	}
+
+	// 用户名校验（非空时才更新）
+	if username != "" {
+		if len(username) > 50 {
+			return nil, apperror.ErrUserUsernameTooLong
+		}
+		// 检查用户名唯一性（排除自身）
+		if existing, _ := s.repo.FindByUsername(ctx, username); existing != nil && existing.ID != id {
+			return nil, apperror.New(apperror.ErrUserUsernameDup.Code,
+				fmt.Sprintf("用户名「%s」已存在", username))
+		}
+		user.Username = username
+	}
+
+	// 手机号校验（非空时才更新）
+	if phone != "" {
+		if len(phone) > 20 {
+			return nil, apperror.ErrUserPhoneTooLong
+		}
+		user.Phone = phone
 	}
 
 	user.Role = role
@@ -154,6 +182,21 @@ func (s *Service) Disable(ctx context.Context, id uint, operatorID uint) error {
 	user.Status = model.UserStatusDisabled
 	if err := s.repo.Update(ctx, user); err != nil {
 		return apperror.Newf(apperror.ErrInternal.Code, "禁用账户失败: %v", err)
+	}
+
+	return nil
+}
+
+// Enable 启用账户
+func (s *Service) Enable(ctx context.Context, id uint) error {
+	user, err := s.repo.FindByID(ctx, id)
+	if err != nil {
+		return apperror.ErrUserNotFound
+	}
+
+	user.Status = model.UserStatusActive
+	if err := s.repo.Update(ctx, user); err != nil {
+		return apperror.Newf(apperror.ErrInternal.Code, "启用账户失败: %v", err)
 	}
 
 	return nil

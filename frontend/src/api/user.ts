@@ -13,7 +13,7 @@ export async function createUser(data: UserCreateForm): Promise<User> {
   return res.data.data
 }
 
-/** 编辑账户 — 仅可修改 role 和 campus_id */
+/** 编辑账户 — 可修改 username、phone、role 和 campus_id */
 export async function updateUser(id: number, data: UserUpdateForm): Promise<User> {
   const res = await client.put<ApiResponse<User>>(`/users/${id}`, data)
   return res.data.data
@@ -22,6 +22,11 @@ export async function updateUser(id: number, data: UserUpdateForm): Promise<User
 /** 禁用账户 — 对齐后端 PUT /users/:id/disable */
 export async function disableUser(id: number): Promise<void> {
   await client.put(`/users/${id}/disable`)
+}
+
+/** 启用账户 — 对齐后端 PUT /users/:id/enable */
+export async function enableUser(id: number): Promise<void> {
+  await client.put(`/users/${id}/enable`)
 }
 
 /** 重置密码 — 对齐后端 PUT /users/:id/reset-pwd */

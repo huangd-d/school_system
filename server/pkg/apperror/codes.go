@@ -46,6 +46,8 @@ var (
 	ErrUserDisableSelf     = New(42011, "不能禁用自己的账户")
 	ErrUserDisabled        = New(42012, "账户已禁用")
 	ErrUserLoginFailed     = New(42013, "用户名或密码错误")
+	ErrUserPhoneEmpty      = New(42014, "手机号不能为空")
+	ErrUserPhoneTooLong    = New(42015, "手机号不能超过20个字符")
 )
 
 // ---------- 物资（43xxx）----------

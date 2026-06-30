@@ -147,6 +147,7 @@ func seedDefaults(db *gorm.DB, cfg *config.Config, logger *zap.Logger) {
 		admin := model.User{
 			Username:     cfg.Seed.DefaultAdminUsername,
 			PasswordHash: string(hash),
+			Phone:        cfg.Seed.DefaultAdminPhone,
 			Role:         model.RoleHQAdmin,
 			CampusID:     hq.ID,
 			Status:       model.UserStatusActive,

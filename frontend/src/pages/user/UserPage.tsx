@@ -1,25 +1,13 @@
-import { useState } from 'react'
-import {
-  Table,
-  Button,
-  Space,
-  Tag,
-  Modal,
-  Form,
-  Input,
-  Select,
-  message,
-} from 'antd'
+import { useState, useMemo } from 'react'
+import { Table, Button, Space, Tag, message } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { listUsers, createUser, updateUser, disableUser, resetPassword } from '@/api/user'
-import type { User, UserCreateForm, UserUpdateForm, Role } from '@/types'
-
-const roleOptions: { label: string; value: Role }[] = [
-  { label: '总部管理员', value: 'hq_admin' },
-  { label: '校区操作员', value: 'campus_operator' },
-  { label: '活动联系人', value: 'activity_contact' },
-]
+import { listUsers, disableUser, enableUser } from '@/api/user'
+import { listCampuses } from '@/api/campus'
+import type { User, Role } from '@/types'
+import CreateUserModal from './CreateUserModal'
+import EditUserModal from './EditUserModal'
+import ResetPasswordModal from './ResetPasswordModal'
 
 const roleMap: Record<Role, { label: string; color: string }> = {
   hq_admin: { label: '总部管理员', color: 'red' },
@@ -32,9 +20,6 @@ export default function UserPage() {
   const [editOpen, setEditOpen] = useState(false)
   const [pwdOpen, setPwdOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
-  const [createForm] = Form.useForm()
-  const [editForm] = Form.useForm()
-  const [pwdForm] = Form.useForm()
   const queryClient = useQueryClient()
 
   // 后端返回平铺数组，无分页
@@ -43,28 +28,17 @@ export default function UserPage() {
     queryFn: listUsers,
   })
 
-  const createMutation = useMutation({
-    mutationFn: createUser,
-    onSuccess: () => {
-      message.success('账户创建成功')
-      queryClient.invalidateQueries({ queryKey: ['users'] })
-      setCreateOpen(false)
-      createForm.resetFields()
-    },
-    onError: (e: Error) => message.error(e.message),
+  // 校区列表 — 用于 id→名称 映射，queryKey ['campuses'] 与 CampusPage 共享缓存
+  const { data: campuses } = useQuery({
+    queryKey: ['campuses'],
+    queryFn: listCampuses,
   })
 
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: UserUpdateForm }) =>
-      updateUser(id, data),
-    onSuccess: () => {
-      message.success('账户更新成功')
-      queryClient.invalidateQueries({ queryKey: ['users'] })
-      setEditOpen(false)
-      editForm.resetFields()
-    },
-    onError: (e: Error) => message.error(e.message),
-  })
+  const campusMap = useMemo(() => {
+    const map = new Map<number, string>()
+    campuses?.forEach(c => map.set(c.id, c.name))
+    return map
+  }, [campuses])
 
   const disableMutation = useMutation({
     mutationFn: disableUser,
@@ -75,20 +49,23 @@ export default function UserPage() {
     onError: (e: Error) => message.error(e.message),
   })
 
-  const pwdMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: { password: string } }) =>
-      resetPassword(id, data),
+  const enableMutation = useMutation({
+    mutationFn: enableUser,
     onSuccess: () => {
-      message.success('密码已重置')
-      setPwdOpen(false)
-      pwdForm.resetFields()
+      message.success('状态已更新')
+      queryClient.invalidateQueries({ queryKey: ['users'] })
     },
     onError: (e: Error) => message.error(e.message),
   })
 
+  const refreshList = () => {
+    queryClient.invalidateQueries({ queryKey: ['users'] })
+  }
+
   const columns = [
     { title: 'ID', dataIndex: 'id', width: 60 },
     { title: '用户名', dataIndex: 'username' },
+    { title: '手机号', dataIndex: 'phone', width: 130 },
     {
       title: '角色',
       dataIndex: 'role',
@@ -97,7 +74,12 @@ export default function UserPage() {
         <Tag color={roleMap[r]?.color}>{roleMap[r]?.label}</Tag>
       ),
     },
-    { title: '校区ID', dataIndex: 'campus_id', width: 80 },
+    {
+      title: '校区',
+      dataIndex: 'campus_id',
+      width: 120,
+      render: (id: number) => campusMap.get(id) ?? `校区 #${id}`,
+    },
     {
       title: '状态',
       dataIndex: 'status',
@@ -117,10 +99,6 @@ export default function UserPage() {
             size="small"
             onClick={() => {
               setSelectedUser(record)
-              editForm.setFieldsValue({
-                role: record.role,
-                campus_id: record.campus_id,
-              })
               setEditOpen(true)
             }}
           >
@@ -129,7 +107,13 @@ export default function UserPage() {
           <Button
             type="link"
             size="small"
-            onClick={() => disableMutation.mutate(record.id)}
+            onClick={() => {
+              if (record.status === 'active') {
+                disableMutation.mutate(record.id)
+              } else {
+                enableMutation.mutate(record.id)
+              }
+            }}
           >
             {record.status === 'active' ? '禁用' : '启用'}
           </Button>
@@ -165,86 +149,25 @@ export default function UserPage() {
         pagination={false}
       />
 
-      {/* 新建账户弹窗 */}
-      <Modal
-        title="新建账户"
+      <CreateUserModal
         open={createOpen}
-        onOk={() => createForm.submit()}
-        onCancel={() => { setCreateOpen(false); createForm.resetFields() }}
-        confirmLoading={createMutation.isPending}
-        destroyOnClose
-      >
-        <Form
-          form={createForm}
-          layout="vertical"
-          className="mt-4"
-          onFinish={(values: UserCreateForm) => createMutation.mutate(values)}
-        >
-          <Form.Item name="username" label="用户名" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="password" label="密码" rules={[{ required: true }]}>
-            <Input.Password />
-          </Form.Item>
-          <Form.Item name="role" label="角色" rules={[{ required: true }]} initialValue="campus_operator">
-            <Select options={roleOptions} />
-          </Form.Item>
-          <Form.Item name="campus_id" label="校区 ID" rules={[{ required: true, message: '请输入校区 ID' }]}>
-            <Input type="number" />
-          </Form.Item>
-        </Form>
-      </Modal>
+        onClose={() => setCreateOpen(false)}
+        onSuccess={refreshList}
+      />
 
-      {/* 编辑账户弹窗 — 仅可改 role 和 campus_id */}
-      <Modal
-        title={`编辑账户 - ${selectedUser?.username}`}
+      <EditUserModal
         open={editOpen}
-        onOk={() => editForm.submit()}
-        onCancel={() => { setEditOpen(false); editForm.resetFields() }}
-        confirmLoading={updateMutation.isPending}
-        destroyOnClose
-      >
-        <Form
-          form={editForm}
-          layout="vertical"
-          className="mt-4"
-          onFinish={(values: UserUpdateForm) => {
-            if (selectedUser) {
-              updateMutation.mutate({ id: selectedUser.id, data: values })
-            }
-          }}
-        >
-          <Form.Item name="role" label="角色" rules={[{ required: true }]}>
-            <Select options={roleOptions} />
-          </Form.Item>
-          <Form.Item name="campus_id" label="校区 ID" rules={[{ required: true }]}>
-            <Input type="number" />
-          </Form.Item>
-        </Form>
-      </Modal>
+        user={selectedUser}
+        onClose={() => setEditOpen(false)}
+        onSuccess={refreshList}
+      />
 
-      {/* 重置密码弹窗 */}
-      <Modal
-        title={`重置密码 - ${selectedUser?.username}`}
+      <ResetPasswordModal
         open={pwdOpen}
-        onOk={() => pwdForm.submit()}
-        onCancel={() => { setPwdOpen(false); pwdForm.resetFields() }}
-        confirmLoading={pwdMutation.isPending}
-        destroyOnClose
-      >
-        <Form
-          form={pwdForm}
-          layout="vertical"
-          className="mt-4"
-          onFinish={(values: { password: string }) =>
-            selectedUser && pwdMutation.mutate({ id: selectedUser.id, data: values })
-          }
-        >
-          <Form.Item name="password" label="新密码" rules={[{ required: true, message: '请输入新密码' }]}>
-            <Input.Password />
-          </Form.Item>
-        </Form>
-      </Modal>
+        user={selectedUser}
+        onClose={() => setPwdOpen(false)}
+        onSuccess={refreshList}
+      />
     </div>
   )
 }

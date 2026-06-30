@@ -31,6 +31,7 @@ type LoginResp struct {
 	User  struct {
 		ID       uint   `json:"id"`
 		Username string `json:"username"`
+		Phone    string `json:"phone"`
 		Role     string `json:"role"`
 		CampusID uint   `json:"campus_id"`
 	} `json:"user"`
@@ -53,6 +54,7 @@ func (h *Handler) Login(c *gin.Context) {
 	resp := LoginResp{Token: token}
 	resp.User.ID = user.ID
 	resp.User.Username = user.Username
+	resp.User.Phone = user.Phone
 	resp.User.Role = user.Role
 	resp.User.CampusID = user.CampusID
 

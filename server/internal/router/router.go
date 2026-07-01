@@ -38,15 +38,15 @@ func Register(
 	userSvc := user.NewService(userRepo, campusRepo)
 	userH := user.NewHandler(userSvc)
 
-	// 物资
-	materialRepo := material.NewRepository(db)
-	materialSvc := material.NewService(materialRepo)
-	materialH := material.NewHandler(materialSvc)
-
-	// 活动
+	// 活动（必须在物资之前初始化，物资依赖 activityRepo）
 	activityRepo := activity.NewRepository(db)
-	activitySvc := activity.NewService(activityRepo)
+	activitySvc := activity.NewService(activityRepo, campusRepo, userRepo)
 	activityH := activity.NewHandler(activitySvc)
+
+	// 物资（注入 activityRepo 用于活动校验）
+	materialRepo := material.NewRepository(db)
+	materialSvc := material.NewService(materialRepo, activityRepo)
+	materialH := material.NewHandler(materialSvc)
 
 	// 结算
 	settlementRepo := settlement.NewRepository(db)
@@ -92,8 +92,13 @@ func Register(
 		// 物资
 		authGroup.GET("/materials/categories", materialH.ListCategories)
 		authGroup.POST("/materials/categories", materialH.CreateCategory)
-		authGroup.GET("/materials/stock", materialH.ListStock)
+		authGroup.PUT("/materials/categories/:id", materialH.UpdateCategory)
+		authGroup.DELETE("/materials/categories/:id", materialH.DeleteCategory)
+		authGroup.GET("/materials/purchases", materialH.ListPurchaseOrders)
 		authGroup.POST("/materials/purchase", materialH.Purchase)
+		authGroup.GET("/materials/stock", materialH.ListStock)
+		authGroup.GET("/materials/stock/:id", materialH.GetStock)
+		authGroup.GET("/materials/stock/:id/distributions", materialH.ListStockDistributions)
 		authGroup.POST("/materials/distribute", materialH.Distribute)
 		authGroup.PUT("/materials/distribute/:id", materialH.AdjustDistribution)
 

@@ -25,6 +25,15 @@ func (r *repository) FindByCampusID(ctx context.Context, campusID uint) ([]model
 	return activities, err
 }
 
+func (r *repository) FindByContactUserID(ctx context.Context, userID uint) ([]model.Activity, error) {
+	var activities []model.Activity
+	err := r.db.WithContext(ctx).
+		Joins("JOIN activity_contacts ON activity_contacts.activity_id = activities.id").
+		Where("activity_contacts.user_id = ?", userID).
+		Find(&activities).Error
+	return activities, err
+}
+
 func (r *repository) FindByID(ctx context.Context, id uint) (*model.Activity, error) {
 	var activity model.Activity
 	err := r.db.WithContext(ctx).First(&activity, id).Error

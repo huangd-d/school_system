@@ -1,8 +1,10 @@
 package campus
 
 import (
+	"context"
 	"strconv"
 
+	"school-system/internal/model"
 	"school-system/pkg/apperror"
 	"school-system/pkg/response"
 
@@ -31,14 +33,24 @@ type CampusResp struct {
 	Type string `json:"type"`
 }
 
+// ---- Service 接口 ----
+
+// ServiceInterface 校区业务接口（供 Handler 依赖，便于单元测试 mock）
+type ServiceInterface interface {
+	List(ctx context.Context) ([]model.Campus, error)
+	Create(ctx context.Context, name string, campusType string) (*model.Campus, error)
+	Update(ctx context.Context, id uint, name string) (*model.Campus, error)
+	Delete(ctx context.Context, id uint) error
+}
+
 // ---- Handler ----
 
 // Handler 校区 HTTP 处理
 type Handler struct {
-	svc *Service
+	svc ServiceInterface
 }
 
-func NewHandler(svc *Service) *Handler {
+func NewHandler(svc ServiceInterface) *Handler {
 	return &Handler{svc: svc}
 }
 

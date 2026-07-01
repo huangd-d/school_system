@@ -4,6 +4,8 @@ import LoginPage from '@/pages/auth/LoginPage'
 import DashboardPage from '@/pages/dashboard/DashboardPage'
 import CampusPage from '@/pages/campus/CampusPage'
 import UserPage from '@/pages/user/UserPage'
+import ActivityPage from '@/pages/activity/ActivityPage'
+import MaterialPage from '@/pages/material/MaterialPage'
 
 export const router = createBrowserRouter([
   {
@@ -18,6 +20,8 @@ export const router = createBrowserRouter([
       { path: 'dashboard', element: <DashboardPage /> },
       { path: 'campuses', element: <CampusPage /> },
       { path: 'users', element: <UserPage /> },
+      { path: 'activities', element: <ActivityPage /> },
+      { path: 'materials', element: <MaterialPage /> },
     ],
   },
 ])

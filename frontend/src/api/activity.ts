@@ -1,45 +1,44 @@
 import client from './client'
-import type { Activity, ApiResponse, PaginatedData, PaginationParams } from '@/types'
-
-export interface ActivityForm {
-  name: string
-  campusId: number
-  startDate: string
-  endDate: string
-  contactIds: number[]
-  remark?: string
-}
+import type {
+  Activity,
+  ActivityListItem,
+  ActivityDetail,
+  ActivityCreateForm,
+  ActivityUpdateForm,
+  AddExecutionForm,
+  ApiResponse,
+} from '@/types'
 
 /** 活动列表 */
-export async function listActivities(params: PaginationParams): Promise<PaginatedData<Activity>> {
-  const res = await client.get<ApiResponse<PaginatedData<Activity>>>('/activities', { params })
+export async function listActivities(): Promise<ActivityListItem[]> {
+  const res = await client.get<ApiResponse<ActivityListItem[]>>('/activities')
   return res.data.data
 }
 
 /** 活动详情 */
-export async function getActivity(id: number): Promise<Activity> {
-  const res = await client.get<ApiResponse<Activity>>(`/activities/${id}`)
+export async function getActivity(id: number): Promise<ActivityDetail> {
+  const res = await client.get<ApiResponse<ActivityDetail>>(`/activities/${id}`)
   return res.data.data
 }
 
 /** 新建活动 */
-export async function createActivity(data: ActivityForm): Promise<Activity> {
+export async function createActivity(data: ActivityCreateForm): Promise<Activity> {
   const res = await client.post<ApiResponse<Activity>>('/activities', data)
   return res.data.data
 }
 
 /** 更新活动 */
-export async function updateActivity(id: number, data: Partial<ActivityForm>): Promise<Activity> {
+export async function updateActivity(id: number, data: ActivityUpdateForm): Promise<Activity> {
   const res = await client.put<ApiResponse<Activity>>(`/activities/${id}`, data)
   return res.data.data
 }
 
-/** 取消活动 */
-export async function cancelActivity(id: number): Promise<void> {
-  await client.put(`/activities/${id}/cancel`)
+/** 录入执行次数 */
+export async function addExecution(activityId: number, data: AddExecutionForm): Promise<void> {
+  await client.post(`/activities/${activityId}/executions`, data)
 }
 
-/** 记录执行 */
-export async function recordExecution(activityId: number, date: string): Promise<void> {
-  await client.post(`/activities/${activityId}/executions`, { date })
+/** 归档活动 */
+export async function archiveActivity(id: number): Promise<void> {
+  await client.put(`/activities/${id}/archive`)
 }

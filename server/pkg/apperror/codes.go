@@ -51,10 +51,45 @@ var (
 )
 
 // ---------- 物资（43xxx）----------
-// 后续补充
+var (
+	ErrMaterialCategoryNameEmpty   = New(43001, "分类名称不能为空")
+	ErrMaterialCategoryNameTooLong = New(43002, "分类名称不能超过50个字符")
+	ErrMaterialCategoryNameDup     = New(43003, "分类名称已存在")
+	ErrMaterialCategoryNotFound    = New(43004, "物资分类不存在")
+	ErrMaterialCategoryHasPurchase = New(43005, "该分类下有采购记录，无法删除")
+	ErrMaterialNameEmpty           = New(43006, "物资名称不能为空")
+	ErrMaterialCategoryNotExist    = New(43007, "指定的物资分类不存在")
+	ErrMaterialQuantityInvalid     = New(43008, "采购数量必须为正整数")
+	ErrMaterialAmountInvalid       = New(43009, "总金额必须大于0")
+	ErrMaterialStockNotFound       = New(43010, "库存记录不存在")
+	ErrMaterialStockInsufficient   = New(43011, "库存余量不足")
+	ErrMaterialDistQuantityInvalid = New(43012, "派发数量必须为正整数")
+	ErrMaterialActivityNotFound    = New(43013, "指定活动不存在")
+	ErrMaterialDistNotFound        = New(43014, "派发记录不存在")
+	ErrMaterialPermDenied          = New(43015, "仅总部管理员可操作物资")
+	ErrMaterialAdjQuantityZero     = New(43016, "调整数量必须大于0")
+)
 
 // ---------- 活动（44xxx）----------
-// 后续补充
+var (
+	ErrActivityNotFound               = New(44001, "活动不存在")
+	ErrActivityNameEmpty              = New(44002, "活动名称不能为空")
+	ErrActivityNameTooLong            = New(44003, "活动名称不能超过200个字符")
+	ErrActivityCampusNotFound          = New(44004, "指定校区不存在")
+	ErrActivityPlannedExecInvalid      = New(44005, "计划执行次数必须大于0")
+	ErrActivityDateInvalid             = New(44006, "结束日期必须晚于开始日期")
+	ErrActivityContactsCampusMismatch  = New(44007, "活动联系人必须与活动属于同一校区")
+	ErrActivityContactsNotFound        = New(44008, "指定的活动联系人不存在")
+	ErrActivityArchivedCannotModify    = New(44009, "已归档的活动不支持修改")
+	ErrActivityNotSettled             = New(44010, "只有已结算的活动才能归档")
+	ErrActivityExecCountInvalid        = New(44011, "执行次数必须大于0")
+	ErrActivityExecExceedPlanned       = New(44012, "累计执行次数将超出计划次数")
+	ErrActivityStatusNoExec            = New(44013, "当前活动状态不允许记录执行")
+	ErrActivityPermissionDenied        = New(44014, "无权限执行此操作")
+	ErrActivityPlannedExecBelowExecuted = New(44015, "计划执行次数不能小于已执行次数")
+	ErrActivityNotContactPerson        = New(44016, "仅活动联系人或总部管理员可记录执行")
+	ErrActivityCampusMismatch         = New(44017, "校区操作员只能创建本校区的活动")
+)
 
 // ---------- 结算（45xxx）----------
 // 后续补充

@@ -5,6 +5,8 @@ import {
   DashboardOutlined,
   BankOutlined,
   UserOutlined,
+  ScheduleOutlined,
+  ShopOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   LogoutOutlined,
@@ -18,6 +20,8 @@ const menuItems = [
   { key: '/dashboard', icon: <DashboardOutlined />, label: '工作台' },
   { key: '/campuses', icon: <BankOutlined />, label: '校区管理' },
   { key: '/users', icon: <UserOutlined />, label: '账户管理' },
+  { key: '/activities', icon: <ScheduleOutlined />, label: '活动管理' },
+  { key: '/materials', icon: <ShopOutlined />, label: '物资管理' },
 ]
 
 const roleLabels: Record<string, string> = {

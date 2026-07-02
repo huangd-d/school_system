@@ -132,6 +132,35 @@ func (r *repository) FindDistributionsByActivity(ctx context.Context, activityID
 	return dists, err
 }
 
+func (r *repository) FindDistributionsWithFilter(ctx context.Context, activityID uint, keyword string, startDate, endDate string, offset, limit int) ([]DistributionWithMaterial, int64, error) {
+	query := r.db.WithContext(ctx).
+		Table("distributions").
+		Select("distributions.*, stocks.material_name").
+		Joins("LEFT JOIN stocks ON stocks.id = distributions.stock_id")
+
+	if activityID > 0 {
+		query = query.Where("distributions.activity_id = ?", activityID)
+	}
+	if keyword != "" {
+		query = query.Where("stocks.material_name LIKE ?", "%"+keyword+"%")
+	}
+	if startDate != "" {
+		query = query.Where("distributions.created_at >= ?", startDate)
+	}
+	if endDate != "" {
+		query = query.Where("distributions.created_at <= ?", endDate+" 23:59:59")
+	}
+
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	var results []DistributionWithMaterial
+	err := query.Order("distributions.created_at DESC").Offset(offset).Limit(limit).Find(&results).Error
+	return results, total, err
+}
+
 func (r *repository) FindDistributionsByStock(ctx context.Context, stockID uint) ([]model.Distribution, error) {
 	var dists []model.Distribution
 	err := r.db.WithContext(ctx).Where("stock_id = ?", stockID).Find(&dists).Error

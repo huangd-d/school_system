@@ -108,6 +108,25 @@ type PurchaseOrderListResp struct {
 	Total int64               `json:"total"`
 }
 
+// DistributionRecordResp 派发记录响应（含物资名称和活动名称）
+type DistributionRecordResp struct {
+	ID           uint   `json:"id"`
+	StockID      uint   `json:"stock_id"`
+	MaterialName string `json:"material_name"`
+	ActivityID   uint   `json:"activity_id"`
+	ActivityName string `json:"activity_name"`
+	Quantity     int    `json:"quantity"`
+	OperatorID   uint   `json:"operator_id"`
+	Reason       string `json:"reason"`
+	CreatedAt    string `json:"created_at"`
+}
+
+// DistributionListResp 派发记录列表响应
+type DistributionListResp struct {
+	List  []DistributionRecordResp `json:"list"`
+	Total int64                    `json:"total"`
+}
+
 // ---- 辅助函数 ----
 
 // getOperator 从 context 获取当前操作人信息（由 auth 中间件注入）
@@ -186,6 +205,7 @@ type ServiceInterface interface {
 	ListStock(ctx context.Context, categoryID uint, keyword string, page, pageSize int) (*StockListResult, error)
 	GetStock(ctx context.Context, id uint) (*model.Stock, error)
 	ListStockDistributions(ctx context.Context, stockID uint) ([]model.Distribution, error)
+	ListDistributions(ctx context.Context, activityID uint, keyword string, startDate, endDate string, page, pageSize int) (*DistributionListResult, error)
 	Distribute(ctx context.Context, stockID uint, activityID uint, quantity int, operatorID uint, reason string, operatorRole string) (*model.Distribution, error)
 	AdjustDistribution(ctx context.Context, distributionID uint, newQuantity int, operatorID uint, reason string, operatorRole string) error
 }
@@ -375,6 +395,39 @@ func (h *Handler) ListStockDistributions(c *gin.Context) {
 		resp = append(resp, toDistributionResp(d))
 	}
 	response.OK(c, resp)
+}
+
+// ListDistributions 获取全部派发记录（支持按活动、物资名称、时间段筛选，分页）
+func (h *Handler) ListDistributions(c *gin.Context) {
+	activityID, _ := strconv.ParseUint(c.DefaultQuery("activity_id", "0"), 10, 64)
+	keyword := c.DefaultQuery("keyword", "")
+	startDate := c.DefaultQuery("start_date", "")
+	endDate := c.DefaultQuery("end_date", "")
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+
+	result, err := h.svc.ListDistributions(c.Request.Context(), uint(activityID), keyword, startDate, endDate, page, pageSize)
+	if err != nil {
+		response.Err(c, err)
+		return
+	}
+
+	resp := make([]DistributionRecordResp, 0, len(result.Distributions))
+	for _, d := range result.Distributions {
+		resp = append(resp, DistributionRecordResp{
+			ID:           d.ID,
+			StockID:      d.StockID,
+			MaterialName: d.MaterialName,
+			ActivityID:   d.ActivityID,
+			ActivityName: d.ActivityName,
+			Quantity:     d.Quantity,
+			OperatorID:   d.OperatorID,
+			Reason:       d.Reason,
+			CreatedAt:    d.CreatedAt.Format("2006-01-02 15:04:05"),
+		})
+	}
+
+	response.OK(c, DistributionListResp{List: resp, Total: result.Total})
 }
 
 // ---- 派发与调整 ----

@@ -99,6 +99,7 @@ func Register(
 		authGroup.GET("/materials/stock", materialH.ListStock)
 		authGroup.GET("/materials/stock/:id", materialH.GetStock)
 		authGroup.GET("/materials/stock/:id/distributions", materialH.ListStockDistributions)
+		authGroup.GET("/materials/distributions", materialH.ListDistributions)
 		authGroup.POST("/materials/distribute", materialH.Distribute)
 		authGroup.PUT("/materials/distribute/:id", materialH.AdjustDistribution)
 

@@ -6,6 +6,7 @@ import (
 	"math"
 	"school-system/internal/model"
 	"school-system/pkg/apperror"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -37,6 +38,7 @@ type Repository interface {
 	FindDistributionByID(ctx context.Context, id uint) (*model.Distribution, error)
 	FindDistributionsByActivity(ctx context.Context, activityID uint) ([]model.Distribution, error)
 	FindDistributionsByStock(ctx context.Context, stockID uint) ([]model.Distribution, error)
+	FindDistributionsWithFilter(ctx context.Context, activityID uint, keyword string, startDate, endDate string, offset, limit int) ([]DistributionWithMaterial, int64, error)
 	SumDistributionsByStock(ctx context.Context, stockID uint) (int, error)
 	UpdateDistribution(ctx context.Context, dist *model.Distribution) error
 
@@ -50,6 +52,7 @@ type Repository interface {
 // ActivityLookup 活动查询接口（由 activity 模块满足，避免跨模块直接依赖）
 type ActivityLookup interface {
 	FindByID(ctx context.Context, id uint) (*model.Activity, error)
+	FindByIDs(ctx context.Context, ids []uint) ([]model.Activity, error)
 }
 
 // StockListResult 库存列表查询结果
@@ -62,6 +65,25 @@ type StockListResult struct {
 type PurchaseOrderListResult struct {
 	Orders []model.PurchaseOrder
 	Total  int64
+}
+
+// DistributionWithMaterial 派发记录 + 物资名称 + 活动名称
+type DistributionWithMaterial struct {
+	ID           uint      `json:"id"`
+	StockID      uint      `json:"stock_id"`
+	MaterialName string    `json:"material_name"`
+	ActivityID   uint      `json:"activity_id"`
+	ActivityName string    `json:"activity_name"`
+	Quantity     int       `json:"quantity"`
+	OperatorID   uint      `json:"operator_id"`
+	Reason       string    `json:"reason"`
+	CreatedAt    time.Time `json:"created_at"`
+}
+
+// DistributionListResult 派发记录分页结果
+type DistributionListResult struct {
+	Distributions []DistributionWithMaterial
+	Total         int64
 }
 
 // Service 物资业务逻辑
@@ -463,4 +485,50 @@ func (s *Service) AdjustDistribution(ctx context.Context, distributionID uint, n
 
 		return nil
 	})
+}
+
+// ---- 派发记录查询 ----
+
+// ListDistributions 查询全部派发记录（支持按活动、物资名称、时间段筛选，分页）
+func (s *Service) ListDistributions(ctx context.Context, activityID uint, keyword string, startDate, endDate string, page, pageSize int) (*DistributionListResult, error) {
+	if page <= 0 {
+		page = 1
+	}
+	if pageSize <= 0 || pageSize > 100 {
+		pageSize = 20
+	}
+	offset := (page - 1) * pageSize
+
+	dists, total, err := s.repo.FindDistributionsWithFilter(ctx, activityID, keyword, startDate, endDate, offset, pageSize)
+	if err != nil {
+		return nil, apperror.Newf(apperror.ErrInternal.Code, "查询派发记录列表失败: %v", err)
+	}
+
+	// 批量获取活动名称
+	if len(dists) > 0 {
+		activityIDs := make([]uint, 0, len(dists))
+		seen := make(map[uint]bool)
+		for _, d := range dists {
+			if !seen[d.ActivityID] {
+				activityIDs = append(activityIDs, d.ActivityID)
+				seen[d.ActivityID] = true
+			}
+		}
+
+		activities, err := s.activities.FindByIDs(ctx, activityIDs)
+		if err != nil {
+			return nil, apperror.Newf(apperror.ErrInternal.Code, "查询活动信息失败: %v", err)
+		}
+
+		nameMap := make(map[uint]string, len(activities))
+		for _, a := range activities {
+			nameMap[a.ID] = a.Name
+		}
+
+		for i := range dists {
+			dists[i].ActivityName = nameMap[dists[i].ActivityID]
+		}
+	}
+
+	return &DistributionListResult{Distributions: dists, Total: total}, nil
 }

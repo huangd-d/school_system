@@ -31,6 +31,7 @@ type MockMaterialRepo struct {
 	FindDistributionByIDFn      func(ctx context.Context, id uint) (*model.Distribution, error)
 	FindDistributionsByActivityFn func(ctx context.Context, activityID uint) ([]model.Distribution, error)
 	FindDistributionsByStockFn  func(ctx context.Context, stockID uint) ([]model.Distribution, error)
+	FindDistributionsWithFilterFn func(ctx context.Context, activityID uint, keyword string, startDate, endDate string, offset, limit int) ([]material.DistributionWithMaterial, int64, error)
 	SumDistributionsByStockFn   func(ctx context.Context, stockID uint) (int, error)
 	UpdateDistributionFn        func(ctx context.Context, dist *model.Distribution) error
 	CreateAuditLogFn            func(ctx context.Context, log *model.AuditLog) error
@@ -163,6 +164,13 @@ func (m *MockMaterialRepo) FindDistributionsByStock(ctx context.Context, stockID
 	return nil, nil
 }
 
+func (m *MockMaterialRepo) FindDistributionsWithFilter(ctx context.Context, activityID uint, keyword string, startDate, endDate string, offset, limit int) ([]material.DistributionWithMaterial, int64, error) {
+	if m.FindDistributionsWithFilterFn != nil {
+		return m.FindDistributionsWithFilterFn(ctx, activityID, keyword, startDate, endDate, offset, limit)
+	}
+	return nil, 0, nil
+}
+
 func (m *MockMaterialRepo) SumDistributionsByStock(ctx context.Context, stockID uint) (int, error) {
 	if m.SumDistributionsByStockFn != nil {
 		return m.SumDistributionsByStockFn(ctx, stockID)
@@ -198,12 +206,20 @@ var _ material.Repository = (*MockMaterialRepo)(nil)
 
 // MockActivityLookup 实现 material.ActivityLookup 接口。
 type MockActivityLookup struct {
-	FindByIDFn func(ctx context.Context, id uint) (*model.Activity, error)
+	FindByIDFn  func(ctx context.Context, id uint) (*model.Activity, error)
+	FindByIDsFn func(ctx context.Context, ids []uint) ([]model.Activity, error)
 }
 
 func (m *MockActivityLookup) FindByID(ctx context.Context, id uint) (*model.Activity, error) {
 	if m.FindByIDFn != nil {
 		return m.FindByIDFn(ctx, id)
+	}
+	return nil, nil
+}
+
+func (m *MockActivityLookup) FindByIDs(ctx context.Context, ids []uint) ([]model.Activity, error) {
+	if m.FindByIDsFn != nil {
+		return m.FindByIDsFn(ctx, ids)
 	}
 	return nil, nil
 }
@@ -221,9 +237,11 @@ type MockMaterialService struct {
 	PurchaseFn            func(ctx context.Context, materialName string, categoryID uint, quantity int, totalAmount float64, notes string, purchaserID uint, operatorRole string) (*model.Stock, error)
 	ListPurchaseOrdersFn  func(ctx context.Context, page, pageSize int) (*material.PurchaseOrderListResult, error)
 	ListStockFn           func(ctx context.Context, categoryID uint, keyword string, page, pageSize int) (*material.StockListResult, error)
-	GetStockFn            func(ctx context.Context, id uint) (*model.Stock, error)
-	DistributeFn          func(ctx context.Context, stockID uint, activityID uint, quantity int, operatorID uint, reason string, operatorRole string) (*model.Distribution, error)
-	AdjustDistributionFn  func(ctx context.Context, distributionID uint, newQuantity int, operatorID uint, reason string, operatorRole string) error
+	GetStockFn               func(ctx context.Context, id uint) (*model.Stock, error)
+	ListStockDistributionsFn  func(ctx context.Context, stockID uint) ([]model.Distribution, error)
+	ListDistributionsFn       func(ctx context.Context, activityID uint, keyword string, startDate, endDate string, page, pageSize int) (*material.DistributionListResult, error)
+	DistributeFn              func(ctx context.Context, stockID uint, activityID uint, quantity int, operatorID uint, reason string, operatorRole string) (*model.Distribution, error)
+	AdjustDistributionFn      func(ctx context.Context, distributionID uint, newQuantity int, operatorID uint, reason string, operatorRole string) error
 }
 
 func (m *MockMaterialService) ListCategories(ctx context.Context) ([]model.MaterialCategory, error) {
@@ -278,6 +296,20 @@ func (m *MockMaterialService) ListStock(ctx context.Context, categoryID uint, ke
 func (m *MockMaterialService) GetStock(ctx context.Context, id uint) (*model.Stock, error) {
 	if m.GetStockFn != nil {
 		return m.GetStockFn(ctx, id)
+	}
+	return nil, nil
+}
+
+func (m *MockMaterialService) ListStockDistributions(ctx context.Context, stockID uint) ([]model.Distribution, error) {
+	if m.ListStockDistributionsFn != nil {
+		return m.ListStockDistributionsFn(ctx, stockID)
+	}
+	return nil, nil
+}
+
+func (m *MockMaterialService) ListDistributions(ctx context.Context, activityID uint, keyword string, startDate, endDate string, page, pageSize int) (*material.DistributionListResult, error) {
+	if m.ListDistributionsFn != nil {
+		return m.ListDistributionsFn(ctx, activityID, keyword, startDate, endDate, page, pageSize)
 	}
 	return nil, nil
 }

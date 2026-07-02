@@ -13,6 +13,7 @@ type Repository interface {
 	FindByCampusID(ctx context.Context, campusID uint) ([]model.Activity, error)
 	FindByContactUserID(ctx context.Context, userID uint) ([]model.Activity, error)
 	FindByID(ctx context.Context, id uint) (*model.Activity, error)
+	FindByIDs(ctx context.Context, ids []uint) ([]model.Activity, error)
 	Create(ctx context.Context, activity *model.Activity) error
 	Update(ctx context.Context, activity *model.Activity) error
 	// 联系人

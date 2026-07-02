@@ -376,3 +376,132 @@ func TestMaterialRepo_CountPurchasesByCategory(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, int64(0), count)
 }
+
+// ============================================================
+//  FindDistributionsWithFilter — 派发记录筛选查询
+// ============================================================
+
+func TestMaterialRepo_FindDistributionsWithFilter_All(t *testing.T) {
+	db := testutil.NewTestDB(t)
+	repo := material.NewRepository(db)
+
+	// 创建库存
+	s1 := &model.Stock{PurchaseOrderID: 1, CategoryID: 1, MaterialName: "语文教材", TotalQuantity: 100, RemainingQty: 100, UnitPrice: 50, Source: "purchase"}
+	s2 := &model.Stock{PurchaseOrderID: 2, CategoryID: 1, MaterialName: "数学教材", TotalQuantity: 50, RemainingQty: 50, UnitPrice: 30, Source: "purchase"}
+	require.NoError(t, db.Create(s1).Error)
+	require.NoError(t, db.Create(s2).Error)
+
+	// 创建派发记录
+	d1 := &model.Distribution{StockID: s1.ID, ActivityID: 1, Quantity: 10, OperatorID: 1, Reason: "活动需要"}
+	d2 := &model.Distribution{StockID: s2.ID, ActivityID: 2, Quantity: 5, OperatorID: 1, Reason: "教学使用"}
+	require.NoError(t, db.Create(d1).Error)
+	require.NoError(t, db.Create(d2).Error)
+
+	// 无筛选条件，应返回全部
+	dists, total, err := repo.FindDistributionsWithFilter(context.Background(), 0, "", "", "", 0, 10)
+	require.NoError(t, err)
+	assert.Len(t, dists, 2)
+	assert.Equal(t, int64(2), total)
+	// 验证 JOIN 出了物资名称
+	assert.Equal(t, "语文教材", dists[0].MaterialName)
+	assert.Equal(t, "数学教材", dists[1].MaterialName)
+}
+
+func TestMaterialRepo_FindDistributionsWithFilter_ByActivity(t *testing.T) {
+	db := testutil.NewTestDB(t)
+	repo := material.NewRepository(db)
+
+	s1 := &model.Stock{PurchaseOrderID: 1, CategoryID: 1, MaterialName: "语文教材", TotalQuantity: 100, RemainingQty: 100, UnitPrice: 50, Source: "purchase"}
+	require.NoError(t, db.Create(s1).Error)
+
+	d1 := &model.Distribution{StockID: s1.ID, ActivityID: 1, Quantity: 10, OperatorID: 1}
+	d2 := &model.Distribution{StockID: s1.ID, ActivityID: 2, Quantity: 5, OperatorID: 1}
+	require.NoError(t, db.Create(d1).Error)
+	require.NoError(t, db.Create(d2).Error)
+
+	dists, total, err := repo.FindDistributionsWithFilter(context.Background(), 1, "", "", "", 0, 10)
+	require.NoError(t, err)
+	assert.Len(t, dists, 1)
+	assert.Equal(t, int64(1), total)
+	assert.Equal(t, uint(1), dists[0].ActivityID)
+}
+
+func TestMaterialRepo_FindDistributionsWithFilter_ByKeyword(t *testing.T) {
+	db := testutil.NewTestDB(t)
+	repo := material.NewRepository(db)
+
+	s1 := &model.Stock{PurchaseOrderID: 1, CategoryID: 1, MaterialName: "语文教材", TotalQuantity: 100, RemainingQty: 100, UnitPrice: 50, Source: "purchase"}
+	s2 := &model.Stock{PurchaseOrderID: 2, CategoryID: 1, MaterialName: "数学教材", TotalQuantity: 50, RemainingQty: 50, UnitPrice: 30, Source: "purchase"}
+	require.NoError(t, db.Create(s1).Error)
+	require.NoError(t, db.Create(s2).Error)
+
+	d1 := &model.Distribution{StockID: s1.ID, ActivityID: 1, Quantity: 10, OperatorID: 1}
+	d2 := &model.Distribution{StockID: s2.ID, ActivityID: 1, Quantity: 5, OperatorID: 1}
+	require.NoError(t, db.Create(d1).Error)
+	require.NoError(t, db.Create(d2).Error)
+
+	dists, total, err := repo.FindDistributionsWithFilter(context.Background(), 0, "语文", "", "", 0, 10)
+	require.NoError(t, err)
+	assert.Len(t, dists, 1)
+	assert.Equal(t, int64(1), total)
+	assert.Equal(t, "语文教材", dists[0].MaterialName)
+}
+
+func TestMaterialRepo_FindDistributionsWithFilter_ByDateRange(t *testing.T) {
+	db := testutil.NewTestDB(t)
+	repo := material.NewRepository(db)
+
+	s1 := &model.Stock{PurchaseOrderID: 1, CategoryID: 1, MaterialName: "语文教材", TotalQuantity: 100, RemainingQty: 100, UnitPrice: 50, Source: "purchase"}
+	require.NoError(t, db.Create(s1).Error)
+
+	// 创建派发记录（SQLite 使用当前时间）
+	d1 := &model.Distribution{StockID: s1.ID, ActivityID: 1, Quantity: 10, OperatorID: 1}
+	require.NoError(t, db.Create(d1).Error)
+
+	// 使用一个很大的日期范围应能查到
+	dists, total, err := repo.FindDistributionsWithFilter(context.Background(), 0, "", "2020-01-01", "2099-12-31", 0, 10)
+	require.NoError(t, err)
+	assert.Len(t, dists, 1)
+	assert.Equal(t, int64(1), total)
+
+	// 使用未来的日期范围应查不到
+	dists, total, err = repo.FindDistributionsWithFilter(context.Background(), 0, "", "2099-01-01", "2099-12-31", 0, 10)
+	require.NoError(t, err)
+	assert.Empty(t, dists)
+	assert.Equal(t, int64(0), total)
+}
+
+func TestMaterialRepo_FindDistributionsWithFilter_Pagination(t *testing.T) {
+	db := testutil.NewTestDB(t)
+	repo := material.NewRepository(db)
+
+	s1 := &model.Stock{PurchaseOrderID: 1, CategoryID: 1, MaterialName: "语文教材", TotalQuantity: 100, RemainingQty: 100, UnitPrice: 50, Source: "purchase"}
+	require.NoError(t, db.Create(s1).Error)
+
+	for i := 0; i < 3; i++ {
+		d := &model.Distribution{StockID: s1.ID, ActivityID: 1, Quantity: 10, OperatorID: 1}
+		require.NoError(t, db.Create(d).Error)
+	}
+
+	// 第一页
+	dists, total, err := repo.FindDistributionsWithFilter(context.Background(), 0, "", "", "", 0, 2)
+	require.NoError(t, err)
+	assert.Len(t, dists, 2)
+	assert.Equal(t, int64(3), total)
+
+	// 第二页
+	dists, total, err = repo.FindDistributionsWithFilter(context.Background(), 0, "", "", "", 2, 2)
+	require.NoError(t, err)
+	assert.Len(t, dists, 1)
+	assert.Equal(t, int64(3), total)
+}
+
+func TestMaterialRepo_FindDistributionsWithFilter_Empty(t *testing.T) {
+	db := testutil.NewTestDB(t)
+	repo := material.NewRepository(db)
+
+	dists, total, err := repo.FindDistributionsWithFilter(context.Background(), 0, "", "", "", 0, 10)
+	require.NoError(t, err)
+	assert.Empty(t, dists)
+	assert.Equal(t, int64(0), total)
+}

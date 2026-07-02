@@ -268,3 +268,24 @@ export interface AdjustDistributionForm {
   quantity: number
   reason: string
 }
+
+/** 派发记录（含物资名和活动名） — 对齐后端 DistributionRecordResp */
+export interface DistributionRecord {
+  id: number
+  stock_id: number
+  material_name: string
+  activity_id: number
+  activity_name: string
+  quantity: number
+  operator_id: number
+  reason: string
+  created_at: string
+}
+
+/** 派发记录查询参数 */
+export interface DistributionQuery extends PaginationParams {
+  activity_id?: number
+  keyword?: string
+  start_date?: string
+  end_date?: string
+}

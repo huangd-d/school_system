@@ -519,3 +519,75 @@ func TestMaterialService_ListPurchaseOrders_DefaultPagination(t *testing.T) {
 	_, err := svc.ListPurchaseOrders(context.Background(), 0, 0)
 	require.NoError(t, err)
 }
+
+// ============================================================
+//  ListDistributions — 派发记录查询
+// ============================================================
+
+func TestMaterialService_ListDistributions_Success(t *testing.T) {
+	mockRepo := newMockRepo()
+	mockRepo.FindDistributionsWithFilterFn = func(ctx context.Context, activityID uint, keyword string, startDate, endDate string, offset, limit int) ([]material.DistributionWithMaterial, int64, error) {
+		return []material.DistributionWithMaterial{
+			{ID: 1, StockID: 1, MaterialName: "语文教材", ActivityID: 1, Quantity: 10, Reason: "活动需要"},
+			{ID: 2, StockID: 2, MaterialName: "数学教材", ActivityID: 2, Quantity: 5, Reason: "教学使用"},
+		}, 2, nil
+	}
+	mockActs := &MockActivityLookup{
+		FindByIDsFn: func(ctx context.Context, ids []uint) ([]model.Activity, error) {
+			assert.ElementsMatch(t, ids, []uint{1, 2})
+			return []model.Activity{
+				{ID: 1, Name: "开学典礼"},
+				{ID: 2, Name: "期末复习"},
+			}, nil
+		},
+	}
+	svc := newService(mockRepo, mockActs)
+
+	result, err := svc.ListDistributions(context.Background(), 0, "", "", "", 1, 20)
+	require.NoError(t, err)
+	assert.Len(t, result.Distributions, 2)
+	assert.Equal(t, int64(2), result.Total)
+	assert.Equal(t, "开学典礼", result.Distributions[0].ActivityName)
+	assert.Equal(t, "期末复习", result.Distributions[1].ActivityName)
+}
+
+func TestMaterialService_ListDistributions_Empty(t *testing.T) {
+	mockRepo := newMockRepo()
+	mockRepo.FindDistributionsWithFilterFn = func(ctx context.Context, activityID uint, keyword string, startDate, endDate string, offset, limit int) ([]material.DistributionWithMaterial, int64, error) {
+		return nil, 0, nil
+	}
+	svc := newService(mockRepo, newMockActivities())
+
+	result, err := svc.ListDistributions(context.Background(), 0, "", "", "", 1, 20)
+	require.NoError(t, err)
+	assert.Empty(t, result.Distributions)
+	assert.Equal(t, int64(0), result.Total)
+}
+
+func TestMaterialService_ListDistributions_DefaultPagination(t *testing.T) {
+	mockRepo := newMockRepo()
+	mockRepo.FindDistributionsWithFilterFn = func(ctx context.Context, activityID uint, keyword string, startDate, endDate string, offset, limit int) ([]material.DistributionWithMaterial, int64, error) {
+		assert.Equal(t, 0, offset)
+		assert.Equal(t, 20, limit)
+		return nil, 0, nil
+	}
+	svc := newService(mockRepo, newMockActivities())
+
+	_, err := svc.ListDistributions(context.Background(), 0, "", "", "", 0, 0)
+	require.NoError(t, err)
+}
+
+func TestMaterialService_ListDistributions_WithFilters(t *testing.T) {
+	mockRepo := newMockRepo()
+	mockRepo.FindDistributionsWithFilterFn = func(ctx context.Context, activityID uint, keyword string, startDate, endDate string, offset, limit int) ([]material.DistributionWithMaterial, int64, error) {
+		assert.Equal(t, uint(3), activityID)
+		assert.Equal(t, "教材", keyword)
+		assert.Equal(t, "2024-01-01", startDate)
+		assert.Equal(t, "2024-06-30", endDate)
+		return nil, 0, nil
+	}
+	svc := newService(mockRepo, newMockActivities())
+
+	_, err := svc.ListDistributions(context.Background(), 3, "教材", "2024-01-01", "2024-06-30", 1, 10)
+	require.NoError(t, err)
+}

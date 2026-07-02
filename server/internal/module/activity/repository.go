@@ -34,6 +34,15 @@ func (r *repository) FindByContactUserID(ctx context.Context, userID uint) ([]mo
 	return activities, err
 }
 
+func (r *repository) FindByIDs(ctx context.Context, ids []uint) ([]model.Activity, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	var activities []model.Activity
+	err := r.db.WithContext(ctx).Where("id IN ?", ids).Find(&activities).Error
+	return activities, err
+}
+
 func (r *repository) FindByID(ctx context.Context, id uint) (*model.Activity, error) {
 	var activity model.Activity
 	err := r.db.WithContext(ctx).First(&activity, id).Error

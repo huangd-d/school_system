@@ -5,6 +5,8 @@ import type {
   CategoryCreateForm,
   DistributeForm,
   Distribution,
+  DistributionQuery,
+  DistributionRecord,
   MaterialCategory,
   PaginatedData,
   PaginationParams,
@@ -73,4 +75,11 @@ export async function distribute(data: DistributeForm): Promise<Distribution> {
 
 export async function adjustDistribution(id: number, data: AdjustDistributionForm): Promise<void> {
   await client.put(`/materials/distribute/${id}`, data)
+}
+
+// ===== 派发记录查询 =====
+
+export async function listAllDistributions(params: DistributionQuery): Promise<PaginatedData<DistributionRecord>> {
+  const res = await client.get<ApiResponse<PaginatedData<DistributionRecord>>>('/materials/distributions', { params })
+  return res.data.data
 }

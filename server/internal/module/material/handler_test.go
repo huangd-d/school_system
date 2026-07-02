@@ -469,3 +469,66 @@ func TestMaterialHandler_ListPurchaseOrders_Success(t *testing.T) {
 	assert.Contains(t, string(data), "语文教材")
 	assert.Contains(t, string(data), `"total":1`)
 }
+
+// ============================================================
+//  ListDistributions — GET /api/v1/materials/distributions
+// ============================================================
+
+func TestMaterialHandler_ListDistributions_Success(t *testing.T) {
+	mockSvc := &MockMaterialService{
+		ListDistributionsFn: func(ctx context.Context, activityID uint, keyword string, startDate, endDate string, page, pageSize int) (*material.DistributionListResult, error) {
+			return &material.DistributionListResult{
+				Distributions: []material.DistributionWithMaterial{
+					{ID: 1, StockID: 1, MaterialName: "语文教材", ActivityID: 1, ActivityName: "开学典礼", Quantity: 10, Reason: "活动需要"},
+				},
+				Total: 1,
+			}, nil
+		},
+	}
+	h := material.NewHandler(mockSvc)
+
+	c, w := setupGin("GET", "/api/v1/materials/distributions?activity_id=1&keyword=教材", nil)
+	h.ListDistributions(c)
+
+	code, _, data := parseResp(w)
+	assert.Equal(t, 0, code)
+	assert.Contains(t, string(data), "语文教材")
+	assert.Contains(t, string(data), "开学典礼")
+	assert.Contains(t, string(data), `"total":1`)
+}
+
+func TestMaterialHandler_ListDistributions_DefaultParams(t *testing.T) {
+	mockSvc := &MockMaterialService{
+		ListDistributionsFn: func(ctx context.Context, activityID uint, keyword string, startDate, endDate string, page, pageSize int) (*material.DistributionListResult, error) {
+			// 默认参数：activityID=0, keyword="", startDate="", endDate="", page=1, pageSize=20
+			assert.Equal(t, uint(0), activityID)
+			assert.Equal(t, "", keyword)
+			assert.Equal(t, 1, page)
+			assert.Equal(t, 20, pageSize)
+			return &material.DistributionListResult{Distributions: nil, Total: 0}, nil
+		},
+	}
+	h := material.NewHandler(mockSvc)
+
+	c, w := setupGin("GET", "/api/v1/materials/distributions", nil)
+	h.ListDistributions(c)
+
+	code, _, data := parseResp(w)
+	assert.Equal(t, 0, code)
+	assert.Contains(t, string(data), `"total":0`)
+}
+
+func TestMaterialHandler_ListDistributions_ServiceError(t *testing.T) {
+	mockSvc := &MockMaterialService{
+		ListDistributionsFn: func(ctx context.Context, activityID uint, keyword string, startDate, endDate string, page, pageSize int) (*material.DistributionListResult, error) {
+			return nil, apperror.ErrInternal
+		},
+	}
+	h := material.NewHandler(mockSvc)
+
+	c, w := setupGin("GET", "/api/v1/materials/distributions", nil)
+	h.ListDistributions(c)
+
+	code, _, _ := parseResp(w)
+	assert.Equal(t, apperror.ErrInternal.Code, code)
+}

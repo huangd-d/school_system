@@ -15,6 +15,7 @@ type MockActivityRepo struct {
 	FindByCampusIDFn     func(ctx context.Context, campusID uint) ([]model.Activity, error)
 	FindByContactUserIDFn func(ctx context.Context, userID uint) ([]model.Activity, error)
 	FindByIDFn           func(ctx context.Context, id uint) (*model.Activity, error)
+	FindByIDsFn          func(ctx context.Context, ids []uint) ([]model.Activity, error)
 	CreateFn             func(ctx context.Context, a *model.Activity) error
 	UpdateFn             func(ctx context.Context, a *model.Activity) error
 	SetContactsFn        func(ctx context.Context, activityID uint, userIDs []uint) error
@@ -48,6 +49,13 @@ func (m *MockActivityRepo) FindByContactUserID(ctx context.Context, userID uint)
 func (m *MockActivityRepo) FindByID(ctx context.Context, id uint) (*model.Activity, error) {
 	if m.FindByIDFn != nil {
 		return m.FindByIDFn(ctx, id)
+	}
+	return nil, nil
+}
+
+func (m *MockActivityRepo) FindByIDs(ctx context.Context, ids []uint) ([]model.Activity, error) {
+	if m.FindByIDsFn != nil {
+		return m.FindByIDsFn(ctx, ids)
 	}
 	return nil, nil
 }

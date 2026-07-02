@@ -15,6 +15,8 @@ interface AuthState {
   restore: () => void
   /** 退出登录 */
   logout: () => void
+  /** 仅更新 token — 用于无感刷新后同步 localStorage 和状态 */
+  setToken: (token: string) => void
 }
 
 /** 从 localStorage 恢复用户信息 */
@@ -54,5 +56,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     localStorage.removeItem(TOKEN_KEY)
     localStorage.removeItem(USER_KEY)
     set({ token: null, user: null })
+  },
+
+  setToken: (token) => {
+    localStorage.setItem(TOKEN_KEY, token)
+    set({ token })
   },
 }))

@@ -71,7 +71,7 @@ export default function CampusFormModal({ open, campus, onClose, onSuccess }: Pr
       onOk={handleSubmit}
       onCancel={handleClose}
       confirmLoading={createMutation.isPending || updateMutation.isPending}
-      destroyOnClose
+      destroyOnHidden
     >
       <Form form={form} layout="vertical" className="mt-4">
         <Form.Item

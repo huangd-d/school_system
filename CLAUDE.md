@@ -272,7 +272,27 @@ apperror.New(apperror.ErrCampusNameDup.Code, fmt.Sprintf("校区名称「%s」�
 - **派发**：一种物资可派发多个活动，累计不超库存余量
 - **活动**：状态自动流转（日期判定），支持多联系人，结算可回撤
 - **摊销快照**：按天粒度，历史修正时同一事务内重算
+
+---
+
+## 设计决策（已确认的非默认规则）
+
+以下规则与初始产品规格不同，是用户明确确认过的改动，**新代码必须遵守**：
+
+- **活动联系人跨校区**：联系人不受校区限制。后端不校验 `CampusID` 匹配（`validateContacts` 只查存在性），前端 `CreateActivityModal` / `EditActivityModal` 不下拉过滤。详见 memory `[[contacts-no-campus-binding]]`。
 - **审计日志**：所有金额变动操作必须记录，在 service 层统一写入
+- **user / campus 模块仅总部管理员可写**：校区和账户的创建、编辑、删除、禁用、重置密码等写操作仅 `hq_admin` 可执行。后端 handler 通过 `checkHQAdmin` 统一拦截（返回 40003），前端 AppLayout 按角色过滤菜单，CampusPage / UserPage 有页面级守卫。List 查询不受限制。详见 memory `[[hq-admin-write-permission]]`。
+
+---
+
+## 行为规则
+
+当用户确认一个**改变了原有业务规则**的决策时，你必须同时完成以下 4 步，缺一不可：
+
+1. **改代码** — 前后端同步修改，不只在一端打补丁
+2. **加测试** — 把新规则写成自动化测试（可执行规约，改了就跑不过）
+3. **写 memory** — 在 `memory/` 目录下创建 memory 文件，记录 Why + How to apply
+4. **更新 CLAUDE.md** — 如果是全局规则，加入上方「设计决策」节
 
 ---
 

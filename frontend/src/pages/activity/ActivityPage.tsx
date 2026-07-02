@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { Table, Button, Space, Tag } from 'antd'
+import { Table, Button, Space, Tag, message } from 'antd'
 import { PlusOutlined, EyeOutlined, EditOutlined, PlusCircleOutlined, FolderOpenOutlined } from '@ant-design/icons'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { listActivities } from '@/api/activity'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { listActivities, archiveActivity } from '@/api/activity'
 import { listCampuses } from '@/api/campus'
 import { useAuthStore } from '@/stores/authStore'
 import type { ActivityListItem, ActivityStatus } from '@/types'
@@ -47,6 +47,17 @@ export default function ActivityPage() {
   const refreshList = () => {
     queryClient.invalidateQueries({ queryKey: ['activities'] })
   }
+
+  const archiveMutation = useMutation({
+    mutationFn: archiveActivity,
+    onSuccess: () => {
+      message.success('活动已归档')
+      refreshList()
+    },
+    onError: (e: Error) => {
+      message.error(e.message)
+    },
+  })
 
   // 是否可编辑（非归档 + hq_admin/campus_operator）
   const canEdit = (status: ActivityStatus) =>
@@ -131,11 +142,8 @@ export default function ActivityPage() {
               type="link"
               size="small"
               icon={<FolderOpenOutlined />}
-              onClick={() => {
-                import('@/api/activity').then(({ archiveActivity }) => {
-                  archiveActivity(r.id).then(() => refreshList())
-                })
-              }}
+              loading={archiveMutation.isPending}
+              onClick={() => archiveMutation.mutate(r.id)}
             >
               归档
             </Button>

@@ -60,6 +60,16 @@ func getOperator(c *gin.Context) (userID, campusID uint, role string) {
 	return
 }
 
+// checkHQAdmin 校验是否为总部管理员，非管理员返回 40003
+func checkHQAdmin(c *gin.Context) bool {
+	_, _, role := getOperator(c)
+	if role != model.RoleHQAdmin {
+		response.Err(c, apperror.ErrForbidden)
+		return false
+	}
+	return true
+}
+
 // toResp 模型转响应
 func toResp(u model.User) UserResp {
 	return UserResp{
@@ -112,6 +122,10 @@ func (h *Handler) List(c *gin.Context) {
 
 // Create 新建账户
 func (h *Handler) Create(c *gin.Context) {
+	if !checkHQAdmin(c) {
+		return
+	}
+
 	var req CreateUserReq
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Err(c, apperror.ErrInvalidParam)
@@ -129,6 +143,10 @@ func (h *Handler) Create(c *gin.Context) {
 
 // Update 编辑账户
 func (h *Handler) Update(c *gin.Context) {
+	if !checkHQAdmin(c) {
+		return
+	}
+
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
 		response.Err(c, apperror.ErrInvalidParam)
@@ -152,6 +170,10 @@ func (h *Handler) Update(c *gin.Context) {
 
 // Disable 禁用账户
 func (h *Handler) Disable(c *gin.Context) {
+	if !checkHQAdmin(c) {
+		return
+	}
+
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
 		response.Err(c, apperror.ErrInvalidParam)
@@ -169,6 +191,10 @@ func (h *Handler) Disable(c *gin.Context) {
 
 // Enable 启用账户
 func (h *Handler) Enable(c *gin.Context) {
+	if !checkHQAdmin(c) {
+		return
+	}
+
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
 		response.Err(c, apperror.ErrInvalidParam)
@@ -185,6 +211,10 @@ func (h *Handler) Enable(c *gin.Context) {
 
 // ResetPassword 重置密码
 func (h *Handler) ResetPassword(c *gin.Context) {
+	if !checkHQAdmin(c) {
+		return
+	}
+
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
 		response.Err(c, apperror.ErrInvalidParam)

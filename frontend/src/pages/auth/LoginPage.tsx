@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router'
 import { Form, Input, Button, Card, Typography, message } from 'antd'
 import { UserOutlined, LockOutlined } from '@ant-design/icons'
@@ -9,8 +9,20 @@ const { Title, Text } = Typography
 
 export default function LoginPage() {
   const navigate = useNavigate()
-  const { login, loading } = useAuthStore()
+  const { login, loading, user, restore } = useAuthStore()
   const [error, setError] = useState('')
+
+  // 确保 store 从 localStorage 恢复（LoginPage 不走 AppLayout，需自行恢复）
+  useEffect(() => {
+    restore()
+  }, [restore])
+
+  // 已登录用户直接跳转
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard', { replace: true })
+    }
+  }, [user, navigate])
 
   const onFinish = async (values: LoginRequest) => {
     setError('')

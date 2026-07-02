@@ -144,7 +144,7 @@ func (s *Service) Create(ctx context.Context, name string, campusID uint, contac
 
 	// 联系人校验
 	if len(contactIDs) > 0 {
-		if err := s.validateContacts(ctx, contactIDs, campusID); err != nil {
+		if err := s.validateContacts(ctx, contactIDs); err != nil {
 			return nil, err
 		}
 	}
@@ -218,7 +218,7 @@ func (s *Service) Update(ctx context.Context, id uint, name string, contactIDs [
 	// 联系人更新（nil 表示不修改；空切片表示清空）
 	if contactIDs != nil {
 		if len(contactIDs) > 0 {
-			if err := s.validateContacts(ctx, contactIDs, activity.CampusID); err != nil {
+			if err := s.validateContacts(ctx, contactIDs); err != nil {
 				return nil, err
 			}
 		}
@@ -370,15 +370,12 @@ func (s *Service) Archive(ctx context.Context, id uint, operatorRole string, ope
 
 // ---- 辅助方法 ----
 
-// validateContacts 校验联系人：存在且属于同一校区
-func (s *Service) validateContacts(ctx context.Context, contactIDs []uint, campusID uint) error {
+// validateContacts 校验联系人存在性（不限制校区，允许跨校区协作）
+func (s *Service) validateContacts(ctx context.Context, contactIDs []uint) error {
 	for _, cid := range contactIDs {
-		u, err := s.users.FindByID(ctx, cid)
+		_, err := s.users.FindByID(ctx, cid)
 		if err != nil {
 			return apperror.ErrActivityContactsNotFound
-		}
-		if u.CampusID != campusID {
-			return apperror.ErrActivityContactsCampusMismatch
 		}
 	}
 	return nil

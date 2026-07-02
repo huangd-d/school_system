@@ -59,7 +59,7 @@ export default function DistributeFormModal({ open, stock, activities, onClose, 
       onOk={handleSubmit}
       onCancel={handleClose}
       confirmLoading={mutation.isPending}
-      destroyOnClose
+      destroyOnHidden
       width={520}
     >
       <Descriptions column={2} size="small" className="mb-4" bordered>

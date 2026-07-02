@@ -68,7 +68,7 @@ export default function ActivityDetailModal({ open, activityId, onClose }: Props
       onCancel={onClose}
       footer={null}
       width={720}
-      destroyOnClose
+      destroyOnHidden
     >
       {isLoading ? (
         <div className="flex justify-center py-8">

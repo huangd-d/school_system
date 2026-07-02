@@ -20,9 +20,8 @@ export default function EditActivityModal({ open, activity, onClose, onSuccess }
     queryFn: listUsers,
   })
 
-  // 根据活动校区过滤联系人候选
+  // 联系人可跨校区选择（不再限制同一校区）
   const contactOptions = (users ?? [])
-    .filter((u) => !activity || u.campus_id === activity.campus_id)
     .map((u) => ({
       label: `${u.username} (${u.phone})`,
       value: u.id,
@@ -91,7 +90,7 @@ export default function EditActivityModal({ open, activity, onClose, onSuccess }
       onOk={() => form.submit()}
       onCancel={handleClose}
       confirmLoading={updateMutation.isPending}
-      destroyOnClose
+      destroyOnHidden
     >
       <Form
         form={form}

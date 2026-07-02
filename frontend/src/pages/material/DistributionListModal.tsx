@@ -59,7 +59,7 @@ export default function DistributionListModal({
         onCancel={onClose}
         footer={null}
         width={800}
-        destroyOnClose
+        destroyOnHidden
       >
         {stock && (
           <div className="mb-3 text-sm text-gray-500">

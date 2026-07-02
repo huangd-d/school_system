@@ -78,8 +78,8 @@ var (
 	ErrActivityCampusNotFound          = New(44004, "指定校区不存在")
 	ErrActivityPlannedExecInvalid      = New(44005, "计划执行次数必须大于0")
 	ErrActivityDateInvalid             = New(44006, "结束日期必须晚于开始日期")
-	ErrActivityContactsCampusMismatch  = New(44007, "活动联系人必须与活动属于同一校区")
-	ErrActivityContactsNotFound        = New(44008, "指定的活动联系人不存在")
+	// 44007 已废弃（联系人不再限制同一校区）
+	ErrActivityContactsNotFound = New(44008, "指定的活动联系人不存在")
 	ErrActivityArchivedCannotModify    = New(44009, "已归档的活动不支持修改")
 	ErrActivityNotSettled             = New(44010, "只有已结算的活动才能归档")
 	ErrActivityExecCountInvalid        = New(44011, "执行次数必须大于0")

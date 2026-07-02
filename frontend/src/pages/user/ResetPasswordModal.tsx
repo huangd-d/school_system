@@ -36,7 +36,7 @@ export default function ResetPasswordModal({ open, user, onClose, onSuccess }: P
       onOk={() => form.submit()}
       onCancel={handleClose}
       confirmLoading={pwdMutation.isPending}
-      destroyOnClose
+      destroyOnHidden
     >
       <Form
         form={form}

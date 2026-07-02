@@ -3,6 +3,7 @@ import { Form, InputNumber, Modal, message, Descriptions } from 'antd'
 import { useMutation } from '@tanstack/react-query'
 import { addExecution } from '@/api/activity'
 import type { ActivityListItem, AddExecutionForm } from '@/types'
+import dayjs from 'dayjs'
 
 interface Props {
   open: boolean
@@ -38,6 +39,12 @@ export default function AddExecutionModal({ open, activity, onClose, onSuccess }
 
   const handleFinish = (values: { count: number }) => {
     if (!activity) return
+    // 当前日期未到开始日期时禁止录入
+    const today = dayjs().format('YYYY-MM-DD')
+    if (today < activity.start_date) {
+      message.warning(`活动尚未开始，开始日期为 ${activity.start_date}`)
+      return
+    }
     addMutation.mutate({ id: activity.id, data: values })
   }
 
@@ -52,7 +59,7 @@ export default function AddExecutionModal({ open, activity, onClose, onSuccess }
       onOk={() => form.submit()}
       onCancel={handleClose}
       confirmLoading={addMutation.isPending}
-      destroyOnClose
+      destroyOnHidden
     >
       <Descriptions
         size="small"

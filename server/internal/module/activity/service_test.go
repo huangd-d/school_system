@@ -216,16 +216,23 @@ func TestActivityService_Create_ContactNotFound(t *testing.T) {
 	assertAppError(t, err, apperror.ErrActivityContactsNotFound)
 }
 
-func TestActivityService_Create_ContactCampusMismatch(t *testing.T) {
+func TestActivityService_Create_ContactAcrossCampus(t *testing.T) {
+	// 联系人可以跨校区（不再限制同一校区）
+	mockRepo := newMockRepo()
+	mockRepo.CreateFn = func(ctx context.Context, a *model.Activity) error {
+		a.ID = 10
+		return nil
+	}
 	mockUsers := &MockUserLookup{
 		FindByIDFn: func(ctx context.Context, id uint) (*model.User, error) {
-			// 联系人属于校区 2，但活动在校区 1
+			// 联系人属于校区 2，活动在校区 1 — 应允许
 			return &model.User{ID: id, Username: "user", CampusID: 2}, nil
 		},
 	}
-	svc := newService(nil, nil, mockUsers)
-	_, err := svc.Create(context.Background(), "活动", 1, []uint{5}, 10, "2025-01-01", "2025-12-31", 1, model.RoleHQAdmin, 1)
-	assertAppError(t, err, apperror.ErrActivityContactsCampusMismatch)
+	svc := newService(mockRepo, nil, mockUsers)
+	created, err := svc.Create(context.Background(), "活动", 1, []uint{5}, 10, "2025-01-01", "2025-12-31", 1, model.RoleHQAdmin, 1)
+	require.NoError(t, err)
+	assert.Equal(t, uint(10), created.ID)
 }
 
 func TestActivityService_Create_Success(t *testing.T) {

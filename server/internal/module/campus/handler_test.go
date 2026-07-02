@@ -25,6 +25,18 @@ func setupGin(method, path string, body io.Reader) (*gin.Context, *httptest.Resp
 	c, _ := gin.CreateTestContext(w)
 	c.Request = httptest.NewRequest(method, path, body)
 	c.Request.Header.Set("Content-Type", "application/json")
+	// 默认注入总部管理员角色（大多数测试场景以管理员身份操作）
+	c.Set("role", model.RoleHQAdmin)
+	return c, w
+}
+
+// setupGinNoAuth 创建无角色注入的测试上下文（用于测试权限拦截）
+func setupGinNoAuth(method, path string, body io.Reader) (*gin.Context, *httptest.ResponseRecorder) {
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(method, path, body)
+	c.Request.Header.Set("Content-Type", "application/json")
 	return c, w
 }
 

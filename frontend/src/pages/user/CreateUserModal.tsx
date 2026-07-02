@@ -55,7 +55,7 @@ export default function CreateUserModal({ open, onClose, onSuccess }: Props) {
       onOk={() => form.submit()}
       onCancel={handleClose}
       confirmLoading={createMutation.isPending}
-      destroyOnClose
+      destroyOnHidden
     >
       <Form
         form={form}

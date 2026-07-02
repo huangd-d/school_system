@@ -82,7 +82,7 @@ export default function CreateActivityModal({ open, onClose, onSuccess }: Props)
       onOk={() => form.submit()}
       onCancel={handleClose}
       confirmLoading={createMutation.isPending}
-      destroyOnClose
+      destroyOnHidden
     >
       <Form
         form={form}
@@ -117,7 +117,7 @@ export default function CreateActivityModal({ open, onClose, onSuccess }: Props)
         <Form.Item
           name="contact_ids"
           label="活动联系人"
-          tooltip="可选多个，仅显示同校区用户"
+          tooltip="可选多个，支持跨校区协作"
         >
           <Select
             mode="multiple"

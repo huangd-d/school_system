@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router'
 import { Layout, Menu, Button, theme } from 'antd'
 import {
@@ -16,12 +16,12 @@ import { useAppStore } from '@/stores/appStore'
 
 const { Header, Sider, Content } = Layout
 
-const menuItems = [
-  { key: '/dashboard', icon: <DashboardOutlined />, label: '工作台' },
-  { key: '/campuses', icon: <BankOutlined />, label: '校区管理' },
-  { key: '/users', icon: <UserOutlined />, label: '账户管理' },
-  { key: '/activities', icon: <ScheduleOutlined />, label: '活动管理' },
-  { key: '/materials', icon: <ShopOutlined />, label: '物资管理' },
+const allMenuItems = [
+  { key: '/dashboard', icon: <DashboardOutlined />, label: '工作台', roles: ['hq_admin', 'campus_operator', 'activity_contact'] },
+  { key: '/campuses', icon: <BankOutlined />, label: '校区管理', roles: ['hq_admin'] },
+  { key: '/users', icon: <UserOutlined />, label: '账户管理', roles: ['hq_admin'] },
+  { key: '/activities', icon: <ScheduleOutlined />, label: '活动管理', roles: ['hq_admin', 'campus_operator', 'activity_contact'] },
+  { key: '/materials', icon: <ShopOutlined />, label: '物资管理', roles: ['hq_admin'] },
 ]
 
 const roleLabels: Record<string, string> = {
@@ -58,9 +58,26 @@ export default function AppLayout() {
     )
   }
 
-  const selectedKey = menuItems.find((item) =>
+  // 按角色过滤菜单
+  const menuItems = useMemo(
+    () => allMenuItems
+      .filter(item => item.roles.includes(user.role))
+      .map(({ key, icon, label }) => ({ key, icon, label })),
+    [user.role],
+  )
+
+  // 未授权页面自动跳转
+  const allowedKeys = useMemo(() => new Set(menuItems.map(m => m.key)), [menuItems])
+  const currentKey = menuItems.find((item) =>
     location.pathname.startsWith(item.key),
-  )?.key || '/dashboard'
+  )?.key
+  useEffect(() => {
+    if (currentKey && !allowedKeys.has(currentKey)) {
+      navigate('/dashboard', { replace: true })
+    }
+  }, [currentKey, allowedKeys, navigate])
+
+  const selectedKey = currentKey || '/dashboard'
 
   const handleLogout = () => {
     logout()

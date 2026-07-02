@@ -50,7 +50,7 @@ export default function PurchaseFormModal({ open, categories, onClose, onSuccess
       onOk={handleSubmit}
       onCancel={handleClose}
       confirmLoading={mutation.isPending}
-      destroyOnClose
+      destroyOnHidden
       width={520}
     >
       <Form form={form} layout="vertical" className="mt-4">

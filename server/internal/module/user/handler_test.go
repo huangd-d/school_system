@@ -20,13 +20,15 @@ import (
 
 // ---- 辅助函数 ----
 
-// setupGin 返回 Gin 测试上下文，注入 auth 信息。
+// setupGin 返回 Gin 测试上下文，默认注入总部管理员权限。
 func setupGin(method, path string, body io.Reader) (*gin.Context, *httptest.ResponseRecorder) {
 	gin.SetMode(gin.TestMode)
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	c.Request = httptest.NewRequest(method, path, body)
 	c.Request.Header.Set("Content-Type", "application/json")
+	// 默认以总部管理员身份操作
+	setAuth(c, 1, 1, model.RoleHQAdmin)
 	return c, w
 }
 

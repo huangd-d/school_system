@@ -54,6 +54,24 @@ func NewHandler(svc ServiceInterface) *Handler {
 	return &Handler{svc: svc}
 }
 
+// getOperator 从 context 获取当前操作人角色（由 auth 中间件注入）
+func getOperator(c *gin.Context) (role string) {
+	if v, ok := c.Get("role"); ok {
+		role = v.(string)
+	}
+	return
+}
+
+// checkHQAdmin 校验是否为总部管理员
+func checkHQAdmin(c *gin.Context) bool {
+	role := getOperator(c)
+	if role != model.RoleHQAdmin {
+		response.Err(c, apperror.ErrForbidden)
+		return false
+	}
+	return true
+}
+
 // List 获取校区列表
 func (h *Handler) List(c *gin.Context) {
 	campuses, err := h.svc.List(c.Request.Context())
@@ -72,6 +90,10 @@ func (h *Handler) List(c *gin.Context) {
 
 // Create 新建校区
 func (h *Handler) Create(c *gin.Context) {
+	if !checkHQAdmin(c) {
+		return
+	}
+
 	var req CreateCampusReq
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Err(c, apperror.ErrInvalidParam)
@@ -89,6 +111,10 @@ func (h *Handler) Create(c *gin.Context) {
 
 // Update 编辑校区
 func (h *Handler) Update(c *gin.Context) {
+	if !checkHQAdmin(c) {
+		return
+	}
+
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
 		response.Err(c, apperror.ErrInvalidParam)
@@ -112,6 +138,10 @@ func (h *Handler) Update(c *gin.Context) {
 
 // Delete 删除校区
 func (h *Handler) Delete(c *gin.Context) {
+	if !checkHQAdmin(c) {
+		return
+	}
+
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
 		response.Err(c, apperror.ErrInvalidParam)

@@ -1,9 +1,11 @@
 import { useState, useMemo } from 'react'
+import { useNavigate } from 'react-router'
 import { Table, Button, Space, Tag, message } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listUsers, disableUser, enableUser } from '@/api/user'
 import { listCampuses } from '@/api/campus'
+import { useAuthStore } from '@/stores/authStore'
 import type { User, Role } from '@/types'
 import CreateUserModal from './CreateUserModal'
 import EditUserModal from './EditUserModal'
@@ -16,9 +18,17 @@ const roleMap: Record<Role, { label: string; color: string }> = {
 }
 
 export default function UserPage() {
+  const navigate = useNavigate()
+  const role = useAuthStore((s) => s.user?.role)
   const [createOpen, setCreateOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [pwdOpen, setPwdOpen] = useState(false)
+
+  // 仅总部管理员可访问
+  if (role && role !== 'hq_admin') {
+    navigate('/dashboard', { replace: true })
+    return null
+  }
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const queryClient = useQueryClient()
 

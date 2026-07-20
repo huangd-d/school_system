@@ -50,7 +50,7 @@ func Register(
 
 	// 结算
 	settlementRepo := settlement.NewRepository(db)
-	settlementSvc := settlement.NewService(settlementRepo)
+	settlementSvc := settlement.NewService(settlementRepo, db)
 	settlementH := settlement.NewHandler(settlementSvc)
 
 	// 报表
@@ -112,6 +112,7 @@ func Register(
 		authGroup.PUT("/activities/:id/archive", activityH.Archive)
 
 		// 结算
+		authGroup.GET("/settlements/by-activity/:activity_id", settlementH.ListByActivity)
 		authGroup.POST("/settlements/preview/:activity_id", settlementH.Preview)
 		authGroup.POST("/settlements/execute/:activity_id", settlementH.Execute)
 		authGroup.POST("/settlements/reverse/:settlement_id", settlementH.Reverse)

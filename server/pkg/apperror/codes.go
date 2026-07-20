@@ -92,7 +92,19 @@ var (
 )
 
 // ---------- 结算（45xxx）----------
-// 后续补充
+var (
+	ErrSettlementActivityNotFound  = New(45001, "活动不存在")
+	ErrSettlementActivityNotEnded  = New(45002, "只有已结束的活动才能进行结算")
+	ErrSettlementActiveExists      = New(45003, "该活动已有有效结算记录，请先回撤后再结算")
+	ErrSettlementNotFound          = New(45004, "结算记录不存在")
+	ErrSettlementAlreadyReversed   = New(45005, "该结算记录已被回撤，无法再次回撤")
+	ErrSettlementNoDistribution    = New(45006, "该活动没有配发物资，无需结算")
+	ErrSettlementAnomaly           = New(45007, "数据异常：已使用量超过配发量，禁止生成回收记录")
+)
 
 // ---------- 报表（46xxx）----------
-// 后续补充
+var (
+	ErrReportActivityNotFound = New(46001, "活动不存在")
+	ErrReportDateInvalid      = New(46002, "日期范围无效：开始日期必须早于结束日期")
+	ErrReportCampusNotFound   = New(46003, "校区不存在")
+)

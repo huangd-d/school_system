@@ -10,6 +10,8 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   LogoutOutlined,
+  DollarOutlined,
+  BarChartOutlined,
 } from '@ant-design/icons'
 import { useAuthStore } from '@/stores/authStore'
 import { useAppStore } from '@/stores/appStore'
@@ -22,6 +24,8 @@ const allMenuItems = [
   { key: '/users', icon: <UserOutlined />, label: '账户管理', roles: ['hq_admin'] },
   { key: '/activities', icon: <ScheduleOutlined />, label: '活动管理', roles: ['hq_admin', 'campus_operator', 'activity_contact'] },
   { key: '/materials', icon: <ShopOutlined />, label: '物资管理', roles: ['hq_admin'] },
+  { key: '/settlements', icon: <DollarOutlined />, label: '结算管理', roles: ['hq_admin'] },
+  { key: '/reports', icon: <BarChartOutlined />, label: '成本报表', roles: ['hq_admin'] },
 ]
 
 const roleLabels: Record<string, string> = {
@@ -50,20 +54,12 @@ export default function AppLayout() {
     }
   }, [ready, user, navigate])
 
-  if (!ready || !user) {
-    return (
-      <div className="h-screen flex items-center justify-center">
-        <span className="text-gray-400">加载中...</span>
-      </div>
-    )
-  }
-
-  // 按角色过滤菜单
+  // 按角色过滤菜单（user 为 null 时返回空数组，保证 hooks 调用次数不变）
   const menuItems = useMemo(
     () => allMenuItems
-      .filter(item => item.roles.includes(user.role))
+      .filter(item => user ? item.roles.includes(user.role) : false)
       .map(({ key, icon, label }) => ({ key, icon, label })),
-    [user.role],
+    [user?.role],
   )
 
   // 未授权页面自动跳转
@@ -76,6 +72,14 @@ export default function AppLayout() {
       navigate('/dashboard', { replace: true })
     }
   }, [currentKey, allowedKeys, navigate])
+
+  if (!ready || !user) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <span className="text-gray-400">加载中...</span>
+      </div>
+    )
+  }
 
   const selectedKey = currentKey || '/dashboard'
 

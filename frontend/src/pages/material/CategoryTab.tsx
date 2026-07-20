@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Button, Space, Table, Popconfirm, message } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -27,46 +27,50 @@ export default function CategoryTab({ categories, isLoading, isHQAdmin }: Props)
     onError: (e: Error) => message.error(e.message),
   })
 
-  const columns: ColumnsType<MaterialCategory> = [
-    { title: 'ID', dataIndex: 'id', width: 60 },
-    { title: '名称', dataIndex: 'name', width: 150 },
-    { title: '备注', dataIndex: 'note', ellipsis: true },
-    { title: '创建时间', dataIndex: 'created_at', width: 170 },
-  ]
+  const columns = useMemo<ColumnsType<MaterialCategory>>(() => {
+    const base: ColumnsType<MaterialCategory> = [
+      { title: 'ID', dataIndex: 'id', width: 60 },
+      { title: '名称', dataIndex: 'name', width: 150 },
+      { title: '备注', dataIndex: 'note', ellipsis: true },
+      { title: '创建时间', dataIndex: 'created_at', width: 170 },
+    ]
 
-  if (isHQAdmin) {
-    columns.push({
-      title: '操作',
-      key: 'action',
-      width: 160,
-      render: (_: unknown, record: MaterialCategory) => (
-        <Space>
-          <Button
-            type="link"
-            size="small"
-            onClick={() => {
-              setSelected(record)
-              setModalOpen(true)
-            }}
-          >
-            编辑
-          </Button>
-          <Popconfirm
-            title="确认删除"
-            description={`确定要删除分类「${record.name}」吗？`}
-            onConfirm={() => deleteMutation.mutate(record.id)}
-            okText="删除"
-            cancelText="取消"
-            okButtonProps={{ danger: true }}
-          >
-            <Button type="link" size="small" danger>
-              删除
+    if (isHQAdmin) {
+      base.push({
+        title: '操作',
+        key: 'action',
+        width: 160,
+        render: (_: unknown, record: MaterialCategory) => (
+          <Space>
+            <Button
+              type="link"
+              size="small"
+              onClick={() => {
+                setSelected(record)
+                setModalOpen(true)
+              }}
+            >
+              编辑
             </Button>
-          </Popconfirm>
-        </Space>
-      ),
-    })
-  }
+            <Popconfirm
+              title="确认删除"
+              description={`确定要删除分类「${record.name}」吗？`}
+              onConfirm={() => deleteMutation.mutate(record.id)}
+              okText="删除"
+              cancelText="取消"
+              okButtonProps={{ danger: true }}
+            >
+              <Button type="link" size="small" danger>
+                删除
+              </Button>
+            </Popconfirm>
+          </Space>
+        ),
+      })
+    }
+
+    return base
+  }, [isHQAdmin, deleteMutation.mutate])
 
   return (
     <div>

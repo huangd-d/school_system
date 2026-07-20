@@ -15,16 +15,11 @@ export default function CampusPage() {
   const [editing, setEditing] = useState<Campus | null>(null)
   const queryClient = useQueryClient()
 
-  // 仅总部管理员可访问
-  if (role && role !== 'hq_admin') {
-    navigate('/dashboard', { replace: true })
-    return null
-  }
-
   // 后端返回平铺数组，无分页
   const { data: campuses, isLoading } = useQuery({
     queryKey: ['campuses'],
     queryFn: listCampuses,
+    enabled: !role || role === 'hq_admin',
   })
 
   const deleteMutation = useMutation({
@@ -35,6 +30,12 @@ export default function CampusPage() {
     },
     onError: (e: Error) => message.error(e.message),
   })
+
+  // 仅总部管理员可访问
+  if (role && role !== 'hq_admin') {
+    navigate('/dashboard', { replace: true })
+    return null
+  }
 
   const refreshList = () => {
     queryClient.invalidateQueries({ queryKey: ['campuses'] })

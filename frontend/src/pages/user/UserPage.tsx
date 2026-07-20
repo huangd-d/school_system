@@ -23,12 +23,6 @@ export default function UserPage() {
   const [createOpen, setCreateOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [pwdOpen, setPwdOpen] = useState(false)
-
-  // 仅总部管理员可访问
-  if (role && role !== 'hq_admin') {
-    navigate('/dashboard', { replace: true })
-    return null
-  }
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const queryClient = useQueryClient()
 
@@ -36,12 +30,14 @@ export default function UserPage() {
   const { data: users, isLoading } = useQuery({
     queryKey: ['users'],
     queryFn: listUsers,
+    enabled: !role || role === 'hq_admin',
   })
 
   // 校区列表 — 用于 id→名称 映射，queryKey ['campuses'] 与 CampusPage 共享缓存
   const { data: campuses } = useQuery({
     queryKey: ['campuses'],
     queryFn: listCampuses,
+    enabled: !role || role === 'hq_admin',
   })
 
   const campusMap = useMemo(() => {
@@ -67,6 +63,12 @@ export default function UserPage() {
     },
     onError: (e: Error) => message.error(e.message),
   })
+
+  // 仅总部管理员可访问
+  if (role && role !== 'hq_admin') {
+    navigate('/dashboard', { replace: true })
+    return null
+  }
 
   const refreshList = () => {
     queryClient.invalidateQueries({ queryKey: ['users'] })

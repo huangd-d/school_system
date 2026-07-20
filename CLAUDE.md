@@ -28,7 +28,7 @@
 | `gopkg.in/natefinch/lumberjack.v2` | 日志文件切割 |
 | `github.com/robfig/cron/v3` | 定时备份 SQLite（每天凌晨3点） |
 
-### 前端（待开发）
+### 前端
 
 | 库 | 用途 |
 |----|------|
@@ -282,6 +282,8 @@ apperror.New(apperror.ErrCampusNameDup.Code, fmt.Sprintf("校区名称「%s」�
 - **活动联系人跨校区**：联系人不受校区限制。后端不校验 `CampusID` 匹配（`validateContacts` 只查存在性），前端 `CreateActivityModal` / `EditActivityModal` 不下拉过滤。详见 memory `[[contacts-no-campus-binding]]`。
 - **审计日志**：所有金额变动操作必须记录，在 service 层统一写入
 - **user / campus 模块仅总部管理员可写**：校区和账户的创建、编辑、删除、禁用、重置密码等写操作仅 `hq_admin` 可执行。后端 handler 通过 `checkHQAdmin` 统一拦截（返回 40003），前端 AppLayout 按角色过滤菜单，CampusPage / UserPage 有页面级守卫。List 查询不受限制。详见 memory `[[hq-admin-write-permission]]`。
+- **结算回收算法**：按执行进度比例计算已消耗量（`usedQty = floor(qty × totalExecuted / plannedExecutions)`），未消耗部分回收入库并扣减摊销基数。详见 memory `[[settlement-amortization-formula]]`。
+- **结算单事务保证**：Execute 和 Reverse 操作在单事务中完成（库存变更 + 结算记录 + 摊销重算 + 审计日志），确保原子性和数据一致性。详见 memory `[[settlement-transaction-guarantee]]`。
 
 ---
 
@@ -327,23 +329,35 @@ CORS_ORIGINS=http://localhost:5173
 
 ## 当前进度
 
-### 已完成
-- [x] 项目骨架搭建（40 个文件）
-- [x] 全部数据模型定义（13 张表）
-- [x] AutoMigrate + 总部校区种子数据
-- [x] 中间件链（auth/cors/logger/recovery/datascope）
-- [x] 路由注册（公开 + 鉴权分组）
-- [x] 统一响应 + 错误码管理
-- [x] 校区模块完整实现（增删改查 + 业务校验）
-- [x] 7 个模块的 repository 基础查询
+### 后端
 
-### 待实现
-- [ ] 账户模块（登录/CRUD/禁用/重置密码）
-- [ ] 物资模块（分类/采购/库存/派发）
-- [ ] 活动模块（CRUD/状态流转/执行次数）
-- [ ] 结算模块（预览/执行/回撤）
-- [ ] 报表模块（摊销计算/历史重算/四维统计）
-- [ ] 前端全部页面
+| 模块 | 状态 | 说明 |
+|------|:----:|------|
+| 项目骨架 | ✅ | 配置、日志、DB 连接、AutoMigrate、种子数据、优雅关闭 |
+| 中间件链 | ✅ | auth / cors / logger / recovery / datascope |
+| 统一响应 + 错误码 | ✅ | `response.OK` / `response.Err`，40xxx~44xxx 已定义 |
+| auth | ✅ | 登录、JWT 签发/验证、Token 刷新（无 repository，直接读 DB） |
+| campus | ✅ | 完整 CRUD + 业务校验 + 4 个测试文件 |
+| user | ✅ | CRUD + 禁用/启用/重置密码 + 4 个测试文件 |
+| material | ✅ | 分类 CRUD、采购入库、库存查询、派发/调整、派发记录查询 + 4 个测试文件 |
+| activity | ✅ | CRUD + 状态自动流转 + 多联系人 + 执行次数 + 归档 + 4 个测试文件 |
+| settlement | ✅ | Preview / Execute / Reverse + 摊销快照重算 + 审计日志 + 测试 |
+| report | ✅ | 四个维度查询（ByActivity/ByDateRange/ByCampus/ByCategory）+ 聚合 + 测试 |
+
+### 前端
+
+| 页面 | 状态 | 说明 |
+|------|:----:|------|
+| 框架搭建 | ✅ | Vite + React 19 + Ant Design + React Query + Zustand + Router |
+| API 层 | ✅ | axios 实例 + 拦截器 + 10 个模块 API 文件 + 错误码映射 |
+| 登录页 | ✅ | LoginPage |
+| 仪表盘 | ✅ | DashboardPage |
+| 校区管理 | ✅ | CampusPage + CampusFormModal |
+| 账户管理 | ✅ | UserPage + Create/Edit/ResetPassword Modal |
+| 物资管理 | ✅ | MaterialPage + 分类/采购库存/派发/派发记录四个 Tab + 各 Form Modal |
+| 活动管理 | ✅ | ActivityPage + Create/Edit/Detail/AddExecution Modal |
+| 结算管理 | ✅ | SettlementPage + SettlementPreviewModal + SettlementHistoryModal |
+| 报表页面 | ✅ | ReportPage（按活动/日期/校区/品类四维报表 + Recharts 图表） |
 
 ---
 

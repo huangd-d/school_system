@@ -6,6 +6,8 @@ import CampusPage from '@/pages/campus/CampusPage'
 import UserPage from '@/pages/user/UserPage'
 import ActivityPage from '@/pages/activity/ActivityPage'
 import MaterialPage from '@/pages/material/MaterialPage'
+import SettlementPage from '@/pages/settlement/SettlementPage'
+import ReportPage from '@/pages/report/ReportPage'
 
 export const router = createBrowserRouter([
   {
@@ -22,6 +24,8 @@ export const router = createBrowserRouter([
       { path: 'users', element: <UserPage /> },
       { path: 'activities', element: <ActivityPage /> },
       { path: 'materials', element: <MaterialPage /> },
+      { path: 'settlements', element: <SettlementPage /> },
+      { path: 'reports', element: <ReportPage /> },
     ],
   },
 ])

@@ -1,27 +1,34 @@
 import client from './client'
-import type { AmortizationSnapshot, ApiResponse, ReportParams } from '@/types'
+import type { ActivityReport, ApiResponse, CampusReport, CategoryReportItem, DateRangeReportItem } from '@/types'
 
-/** 摊销快照列表 */
-export async function listSnapshots(params: {
-  page: number
-  pageSize: number
-  startDate?: string
-  endDate?: string
-}): Promise<{ list: AmortizationSnapshot[]; total: number }> {
-  const res = await client.get<ApiResponse<{ list: AmortizationSnapshot[]; total: number }>>(
-    '/reports/snapshots',
-    { params },
-  )
+/** 按活动维度报表 */
+export async function getReportByActivity(activityId: number): Promise<ActivityReport> {
+  const res = await client.get<ApiResponse<ActivityReport>>('/reports/by-activity', {
+    params: { activity_id: activityId },
+  })
   return res.data.data
 }
 
-/** 按维度统计 */
-export async function getReport(params: ReportParams): Promise<Record<string, number>> {
-  const res = await client.get<ApiResponse<Record<string, number>>>('/reports/statistics', { params })
+/** 按日期范围维度报表 */
+export async function getReportByDateRange(startDate: string, endDate: string): Promise<DateRangeReportItem[]> {
+  const res = await client.get<ApiResponse<DateRangeReportItem[]>>('/reports/by-date-range', {
+    params: { start_date: startDate, end_date: endDate },
+  })
   return res.data.data
 }
 
-/** 重算摊销 */
-export async function recalculateAmortization(startDate: string, endDate: string): Promise<void> {
-  await client.post('/reports/recalculate', { startDate, endDate })
+/** 按校区维度报表 */
+export async function getReportByCampus(campusId: number, startDate: string, endDate: string): Promise<CampusReport> {
+  const res = await client.get<ApiResponse<CampusReport>>('/reports/by-campus', {
+    params: { campus_id: campusId, start_date: startDate, end_date: endDate },
+  })
+  return res.data.data
+}
+
+/** 按品类维度报表 */
+export async function getReportByCategory(startDate: string, endDate: string): Promise<CategoryReportItem[]> {
+  const res = await client.get<ApiResponse<CategoryReportItem[]>>('/reports/by-category', {
+    params: { start_date: startDate, end_date: endDate },
+  })
+  return res.data.data
 }

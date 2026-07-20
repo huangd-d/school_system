@@ -289,3 +289,106 @@ export interface DistributionQuery extends PaginationParams {
   start_date?: string
   end_date?: string
 }
+
+// ==================== 结算 ====================
+
+/** 结算记录 */
+export interface Settlement {
+  id: number
+  activity_id: number
+  status: 'settled' | 'reversed'
+  operator_id: number
+  total_returned_amount: number
+  created_at: string
+  recovery_items?: RecoveryItem[]
+}
+
+/** 回收明细 */
+export interface RecoveryItem {
+  id: number
+  settlement_id: number
+  stock_id: number
+  quantity: number
+  cost_deduction: number
+}
+
+/** 结算预览项 */
+export interface SettlementPreviewItem {
+  stock_id: number
+  material_name: string
+  distributed_qty: number
+  used_qty: number
+  recovery_qty: number
+  unit_price: number
+  cost_deduction: number
+}
+
+/** 结算预览结果 */
+export interface SettlementPreview {
+  items: SettlementPreviewItem[]
+  total_returned_amount: number
+  activity_name: string
+  total_executed: number
+  planned_executions: number
+}
+
+// ==================== 摊销 ====================
+
+/** 摊销快照 */
+export interface AmortizationSnapshot {
+  id: number
+  activity_id: number
+  date: string
+  execution_count: number
+  amortization_base: number
+  daily_amount: number
+}
+
+// ==================== 报表 ====================
+
+/** 报表维度 */
+export type ReportDimension = 'activity' | 'date_range' | 'campus' | 'category'
+
+/** 报表查询参数 */
+export interface ReportParams {
+  dimension: ReportDimension
+  activity_id?: number
+  campus_id?: number
+  start_date?: string
+  end_date?: string
+}
+
+/** 按活动报表 */
+export interface ActivityReport {
+  activity_id: number
+  activity_name: string
+  campus_name: string
+  total_investment: number
+  total_amortization: number
+  planned_executions: number
+  total_executed: number
+}
+
+/** 按日期范围报表项 */
+export interface DateRangeReportItem {
+  date: string
+  execution_count: number
+  daily_amount: number
+}
+
+/** 按校区报表 */
+export interface CampusReport {
+  campus_id: number
+  campus_name: string
+  activity_count: number
+  total_investment: number
+  total_amortization: number
+}
+
+/** 按品类报表项 */
+export interface CategoryReportItem {
+  category_id: number
+  category_name: string
+  total_quantity: number
+  total_amount: number
+}

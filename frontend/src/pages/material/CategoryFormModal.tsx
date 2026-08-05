@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
-import { Form, Input, Modal, message } from 'antd'
+import { Form, Input, message } from 'antd'
+import DraggableModal from '@/components/DraggableModal'
 import { useMutation } from '@tanstack/react-query'
 import { createCategory, updateCategory } from '@/api/material'
 import type { MaterialCategory, CategoryCreateForm } from '@/types'
@@ -62,7 +63,7 @@ export default function CategoryFormModal({ open, category, onClose, onSuccess }
   }
 
   return (
-    <Modal
+    <DraggableModal
       title={isEdit ? '编辑分类' : '新建分类'}
       open={open}
       onOk={handleSubmit}
@@ -89,6 +90,6 @@ export default function CategoryFormModal({ open, category, onClose, onSuccess }
           <Input.TextArea rows={3} placeholder="可选备注" />
         </Form.Item>
       </Form>
-    </Modal>
+    </DraggableModal>
   )
 }

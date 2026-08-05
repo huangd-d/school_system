@@ -16,10 +16,32 @@ type ServiceInterface interface {
 	Execute(ctx context.Context, activityID uint, operatorID uint) (*model.Settlement, error)
 	Reverse(ctx context.Context, settlementID uint, operatorID uint) error
 	ListByActivity(ctx context.Context, activityID uint) ([]model.Settlement, error)
+	Overview(ctx context.Context) ([]SettlementOverviewItem, error)
 }
 
 // 编译期校验 *Service 实现了 ServiceInterface
 var _ ServiceInterface = (*Service)(nil)
+
+// SettlementResp 结算记录响应（时间字段统一 yyyy-MM-dd，金额单位：分）
+type SettlementResp struct {
+	ID                  uint   `json:"id"`
+	ActivityID          uint   `json:"activity_id"`
+	Status              string `json:"status"`
+	OperatorID          uint   `json:"operator_id"`
+	TotalReturnedAmount int64  `json:"total_returned_amount"`
+	CreatedAt           string `json:"created_at"`
+}
+
+func toSettlementResp(s model.Settlement) SettlementResp {
+	return SettlementResp{
+		ID:                  s.ID,
+		ActivityID:          s.ActivityID,
+		Status:              s.Status,
+		OperatorID:          s.OperatorID,
+		TotalReturnedAmount: s.TotalReturnedAmount,
+		CreatedAt:           s.CreatedAt.Format("2006-01-02"),
+	}
+}
 
 // Handler 结算 HTTP 处理
 type Handler struct {
@@ -28,8 +50,13 @@ type Handler struct {
 
 func NewHandler(svc ServiceInterface) *Handler { return &Handler{svc: svc} }
 
-// Preview 结算预览 POST /api/v1/settlements/preview/:activity_id
+// Preview 结算预览 GET /api/v1/settlements/preview/:activity_id
 func (h *Handler) Preview(c *gin.Context) {
+	if _, _, role := getOperator(c); role != model.RoleHQAdmin {
+		response.Err(c, apperror.ErrSettlementPermDenied)
+		return
+	}
+
 	activityID, err := strconv.ParseUint(c.Param("activity_id"), 10, 64)
 	if err != nil {
 		response.Err(c, apperror.ErrInvalidParam)
@@ -47,13 +74,17 @@ func (h *Handler) Preview(c *gin.Context) {
 
 // Execute 执行结算 POST /api/v1/settlements/execute/:activity_id
 func (h *Handler) Execute(c *gin.Context) {
+	operatorID, _, role := getOperator(c)
+	if role != model.RoleHQAdmin {
+		response.Err(c, apperror.ErrSettlementPermDenied)
+		return
+	}
+
 	activityID, err := strconv.ParseUint(c.Param("activity_id"), 10, 64)
 	if err != nil {
 		response.Err(c, apperror.ErrInvalidParam)
 		return
 	}
-
-	operatorID, _, _ := getOperator(c)
 
 	settlement, err := h.svc.Execute(c.Request.Context(), uint(activityID), operatorID)
 	if err != nil {
@@ -61,18 +92,22 @@ func (h *Handler) Execute(c *gin.Context) {
 		return
 	}
 
-	response.OK(c, settlement)
+	response.OK(c, toSettlementResp(*settlement))
 }
 
 // Reverse 回撤结算 POST /api/v1/settlements/reverse/:settlement_id
 func (h *Handler) Reverse(c *gin.Context) {
+	operatorID, _, role := getOperator(c)
+	if role != model.RoleHQAdmin {
+		response.Err(c, apperror.ErrSettlementPermDenied)
+		return
+	}
+
 	settlementID, err := strconv.ParseUint(c.Param("settlement_id"), 10, 64)
 	if err != nil {
 		response.Err(c, apperror.ErrInvalidParam)
 		return
 	}
-
-	operatorID, _, _ := getOperator(c)
 
 	if err := h.svc.Reverse(c.Request.Context(), uint(settlementID), operatorID); err != nil {
 		response.Err(c, err)
@@ -84,6 +119,11 @@ func (h *Handler) Reverse(c *gin.Context) {
 
 // ListByActivity 查询活动的结算记录 GET /api/v1/settlements/by-activity/:activity_id
 func (h *Handler) ListByActivity(c *gin.Context) {
+	if _, _, role := getOperator(c); role != model.RoleHQAdmin {
+		response.Err(c, apperror.ErrSettlementPermDenied)
+		return
+	}
+
 	activityID, err := strconv.ParseUint(c.Param("activity_id"), 10, 64)
 	if err != nil {
 		response.Err(c, apperror.ErrInvalidParam)
@@ -96,7 +136,28 @@ func (h *Handler) ListByActivity(c *gin.Context) {
 		return
 	}
 
-	response.OK(c, settlements)
+	resp := make([]SettlementResp, 0, len(settlements))
+	for _, s := range settlements {
+		resp = append(resp, toSettlementResp(s))
+	}
+
+	response.OK(c, resp)
+}
+
+// Overview 结算管理概览 GET /api/v1/settlements/overview
+func (h *Handler) Overview(c *gin.Context) {
+	if _, _, role := getOperator(c); role != model.RoleHQAdmin {
+		response.Err(c, apperror.ErrSettlementPermDenied)
+		return
+	}
+
+	items, err := h.svc.Overview(c.Request.Context())
+	if err != nil {
+		response.Err(c, err)
+		return
+	}
+
+	response.OK(c, items)
 }
 
 // ---- 辅助函数 ----

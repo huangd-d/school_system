@@ -49,12 +49,12 @@ func TestReportByActivity_Success(t *testing.T) {
 
 	cat := &model.MaterialCategory{Name: "教材"}
 	db.Create(cat)
-	stock := &model.Stock{CategoryID: cat.ID, MaterialName: "数学教材", TotalQuantity: 100, RemainingQty: 50, UnitPrice: 10, Source: "purchase"}
+	stock := &model.Stock{CategoryID: cat.ID, MaterialName: "数学教材", TotalQuantity: 100, RemainingQty: 50, UnitPrice: 1000, Source: "purchase"}
 	db.Create(stock)
 	dist := &model.Distribution{StockID: stock.ID, ActivityID: activity.ID, Quantity: 50, OperatorID: 1}
 	db.Create(dist)
 
-	snap := &model.AmortizationSnapshot{ActivityID: activity.ID, Date: start, ExecutionCount: 5, AmortizationBase: 500, DailyAmount: 250}
+	snap := &model.AmortizationSnapshot{ActivityID: activity.ID, Date: start, ExecutionCount: 5, AmortizationBase: 50000, DailyAmount: 25000}
 	db.Create(snap)
 
 	repo := &MockReportRepo{
@@ -74,8 +74,8 @@ func TestReportByActivity_Success(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "活动A", result.ActivityName)
 	assert.Equal(t, "测试校区", result.CampusName)
-	assert.Equal(t, 500.0, result.TotalInvestment) // 50 * 10
-	assert.Equal(t, 250.0, result.TotalAmortization)
+	assert.Equal(t, int64(50000), result.TotalInvestment) // 50 * 1000 分
+	assert.Equal(t, int64(25000), result.TotalAmortization)
 }
 
 // ============================================================
@@ -101,9 +101,9 @@ func TestReportByDateRange_Success(t *testing.T) {
 	repo := &MockReportRepo{
 		FindSnapshotsByDateRangeFn: func(ctx context.Context, s, e time.Time) ([]model.AmortizationSnapshot, error) {
 			return []model.AmortizationSnapshot{
-				{ActivityID: 1, Date: start, ExecutionCount: 3, DailyAmount: 150},
-				{ActivityID: 2, Date: start, ExecutionCount: 2, DailyAmount: 100},
-				{ActivityID: 1, Date: start.AddDate(0, 0, 1), ExecutionCount: 4, DailyAmount: 200},
+				{ActivityID: 1, Date: start, ExecutionCount: 3, DailyAmount: 15000},
+				{ActivityID: 2, Date: start, ExecutionCount: 2, DailyAmount: 10000},
+				{ActivityID: 1, Date: start.AddDate(0, 0, 1), ExecutionCount: 4, DailyAmount: 20000},
 			}, nil
 		},
 	}
@@ -112,9 +112,9 @@ func TestReportByDateRange_Success(t *testing.T) {
 	result, err := svc.ByDateRange(context.Background(), start, end)
 	require.NoError(t, err)
 	assert.GreaterOrEqual(t, len(result), 3) // 3 dates in range
-	// 第一天聚合: 3+2=5 execution, 150+100=250 amount
+	// 第一天聚合: 3+2=5 execution, 15000+10000=25000 amount
 	assert.Equal(t, 5, result[0].ExecutionCount)
-	assert.Equal(t, 250.0, result[0].DailyAmount)
+	assert.Equal(t, int64(25000), result[0].DailyAmount)
 }
 
 // ============================================================
@@ -173,8 +173,8 @@ func TestReportByCategory_Success(t *testing.T) {
 	repo := &MockReportRepo{
 		FindDistributionAggByCategoryFn: func(ctx context.Context, s, e time.Time) ([]report.CategoryAggRow, error) {
 			return []report.CategoryAggRow{
-				{CategoryID: 1, CategoryName: "教材", TotalQuantity: 200, TotalAmount: 2000},
-				{CategoryID: 2, CategoryName: "文具", TotalQuantity: 500, TotalAmount: 1500},
+				{CategoryID: 1, CategoryName: "教材", TotalQuantity: 200, TotalAmount: 200000},
+				{CategoryID: 2, CategoryName: "文具", TotalQuantity: 500, TotalAmount: 150000},
 			}, nil
 		},
 	}
@@ -185,6 +185,38 @@ func TestReportByCategory_Success(t *testing.T) {
 	assert.Len(t, result, 2)
 	assert.Equal(t, "教材", result[0].CategoryName)
 	assert.Equal(t, "文具", result[1].CategoryName)
-	// 按总金额降序：2000 > 1500
+	// 按总金额降序：200000 > 150000
 	assert.Greater(t, result[0].TotalAmount, result[1].TotalAmount)
+}
+
+// TestReportByActivity_NoFloatTail 验证整数分下 100 件 × 1.1 元无浮点尾差
+// （原 float64 场景 100 × 1.1 = 110.00000000000001，分单位整数为 100 × 110 = 11000 分）
+func TestReportByActivity_NoFloatTail(t *testing.T) {
+	db := testutil.NewTestDB(t)
+
+	campus := &model.Campus{Name: "校区"}
+	db.Create(campus)
+	start, _ := time.Parse("2006-01-02", "2024-01-01")
+	end, _ := time.Parse("2006-01-02", "2024-01-05")
+	activity := &model.Activity{Name: "活动A", CampusID: campus.ID, PlannedExecutions: 10, StartDate: start, EndDate: end, Status: model.ActivityEnded}
+	db.Create(activity)
+	stock := &model.Stock{CategoryID: 1, MaterialName: "教材", TotalQuantity: 100, RemainingQty: 0, UnitPrice: 110, Source: "purchase"} // 1.1 元 = 110 分
+	db.Create(stock)
+
+	repo := &MockReportRepo{
+		FindDistributionsByActivityFn: func(ctx context.Context, activityID uint) ([]model.Distribution, error) {
+			return []model.Distribution{{StockID: stock.ID, ActivityID: activity.ID, Quantity: 100}}, nil
+		},
+		FindStockByIDFn: func(ctx context.Context, id uint) (*model.Stock, error) {
+			return stock, nil
+		},
+		FindSnapshotsFn: func(ctx context.Context, activityID uint, start, end time.Time) ([]model.AmortizationSnapshot, error) {
+			return nil, nil
+		},
+	}
+
+	svc := report.NewService(repo, db)
+	result, err := svc.ByActivity(context.Background(), activity.ID)
+	require.NoError(t, err)
+	assert.Equal(t, int64(11000), result.TotalInvestment, "100 × 110 分 = 11000 分（110 元），必须无浮点尾差")
 }

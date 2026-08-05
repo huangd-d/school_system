@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
-import { Form, Input, InputNumber, Modal, Select, DatePicker, message } from 'antd'
+import { Form, Input, InputNumber, Select, DatePicker, message } from 'antd'
+import DraggableModal from '@/components/DraggableModal'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { createActivity } from '@/api/activity'
 import { listCampuses } from '@/api/campus'
@@ -76,7 +77,7 @@ export default function CreateActivityModal({ open, onClose, onSuccess }: Props)
   }
 
   return (
-    <Modal
+    <DraggableModal
       title="新建活动"
       open={open}
       onOk={() => form.submit()}
@@ -156,6 +157,6 @@ export default function CreateActivityModal({ open, onClose, onSuccess }: Props)
           <DatePicker className="w-full" format="YYYY-MM-DD" />
         </Form.Item>
       </Form>
-    </Modal>
+    </DraggableModal>
   )
 }

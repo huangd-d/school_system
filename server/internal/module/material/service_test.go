@@ -8,6 +8,7 @@ import (
 
 	"school-system/internal/model"
 	"school-system/internal/module/material"
+	"school-system/internal/testutil"
 	"school-system/pkg/apperror"
 
 	"github.com/stretchr/testify/assert"
@@ -496,7 +497,7 @@ func TestMaterialService_ListPurchaseOrders_Success(t *testing.T) {
 	mockRepo := newMockRepo()
 	mockRepo.FindPurchaseOrdersFn = func(ctx context.Context, offset, limit int) ([]model.PurchaseOrder, int64, error) {
 		return []model.PurchaseOrder{
-			{ID: 1, MaterialName: "语文教材", Quantity: 100, TotalAmount: 5000},
+			{ID: 1, MaterialName: "语文教材", Quantity: 100, TotalAmount: 500000},
 		}, 1, nil
 	}
 	svc := newService(mockRepo, newMockActivities())
@@ -590,4 +591,18 @@ func TestMaterialService_ListDistributions_WithFilters(t *testing.T) {
 
 	_, err := svc.ListDistributions(context.Background(), 3, "教材", "2024-01-01", "2024-06-30", 1, 10)
 	require.NoError(t, err)
+}
+
+
+// TestMaterialService_Purchase_UnitPriceRounding 验证整数分单价四舍五入：
+// 5000.00 元（500000 分）÷ 3 件 = 1666.67 元/件（166667 分），无浮点尾差
+func TestMaterialService_Purchase_UnitPriceRounding(t *testing.T) {
+	db := testutil.NewTestDB(t)
+	require.NoError(t, db.Create(&model.MaterialCategory{ID: 1, Name: "教材"}).Error)
+
+	repo := material.NewRepository(db)
+	svc := material.NewService(repo, newMockActivities())
+	stock, err := svc.Purchase(context.Background(), "语文教材", 1, 3, 500000, "", 1, model.RoleHQAdmin)
+	require.NoError(t, err)
+	assert.Equal(t, int64(166667), stock.UnitPrice, "500000 分 / 3 件应四舍五入为 166667 分")
 }

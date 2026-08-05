@@ -38,6 +38,11 @@ func NewTestDB(t *testing.T) *gorm.DB {
 	)
 	require.NoError(t, err, "数据库迁移失败")
 
+	// 与生产保持一致：一活动最多一条有效（settled）结算记录
+	require.NoError(t, db.Exec(
+		"CREATE UNIQUE INDEX IF NOT EXISTS idx_settlements_activity_settled ON settlements(activity_id) WHERE status = 'settled'",
+	).Error, "创建结算唯一索引失败")
+
 	// 启用外键约束（SQLite 默认不启用）
 	db.Exec("PRAGMA foreign_keys = ON")
 

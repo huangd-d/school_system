@@ -1,4 +1,5 @@
-import { Form, Input, Modal, message } from 'antd'
+import { Form, Input, message } from 'antd'
+import DraggableModal from '@/components/DraggableModal'
 import { useMutation } from '@tanstack/react-query'
 import { resetPassword } from '@/api/user'
 import type { User } from '@/types'
@@ -30,7 +31,7 @@ export default function ResetPasswordModal({ open, user, onClose, onSuccess }: P
   }
 
   return (
-    <Modal
+    <DraggableModal
       title={`重置密码 - ${user?.username}`}
       open={open}
       onOk={() => form.submit()}
@@ -50,6 +51,6 @@ export default function ResetPasswordModal({ open, user, onClose, onSuccess }: P
           <Input.Password />
         </Form.Item>
       </Form>
-    </Modal>
+    </DraggableModal>
   )
 }

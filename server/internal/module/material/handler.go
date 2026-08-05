@@ -27,11 +27,11 @@ type UpdateCategoryReq struct {
 
 // PurchaseReq 采购入库请求
 type PurchaseReq struct {
-	MaterialName string  `json:"material_name" binding:"required"`
-	CategoryID   uint    `json:"category_id" binding:"required,min=1"`
-	Quantity     int     `json:"quantity" binding:"required,min=1"`
-	TotalAmount  float64 `json:"total_amount" binding:"required,min=0.01"`
-	Notes        string  `json:"notes"`
+	MaterialName string `json:"material_name" binding:"required"`
+	CategoryID   uint   `json:"category_id" binding:"required,min=1"`
+	Quantity     int    `json:"quantity" binding:"required,min=1"`
+	TotalAmount  int64  `json:"total_amount" binding:"required,min=1"` // 单位：分
+	Notes        string `json:"notes"`
 }
 
 // DistributeReq 派发物资请求
@@ -60,16 +60,16 @@ type CategoryResp struct {
 
 // StockResp 库存响应
 type StockResp struct {
-	ID              uint    `json:"id"`
-	PurchaseOrderID uint    `json:"purchase_order_id"`
-	CategoryID      uint    `json:"category_id"`
-	MaterialName    string  `json:"material_name"`
-	TotalQuantity   int     `json:"total_quantity"`
-	RemainingQty    int     `json:"remaining_qty"`
-	UnitPrice       float64 `json:"unit_price"`
-	Source          string  `json:"source"`
-	CreatedAt       string  `json:"created_at"`
-	UpdatedAt       string  `json:"updated_at"`
+	ID              uint   `json:"id"`
+	PurchaseOrderID uint   `json:"purchase_order_id"`
+	CategoryID      uint   `json:"category_id"`
+	MaterialName    string `json:"material_name"`
+	TotalQuantity   int    `json:"total_quantity"`
+	RemainingQty    int    `json:"remaining_qty"`
+	UnitPrice       int64  `json:"unit_price"` // 单位：分
+	Source          string `json:"source"`
+	CreatedAt       string `json:"created_at"`
+	UpdatedAt       string `json:"updated_at"`
 }
 
 // DistributionResp 派发记录响应
@@ -85,15 +85,15 @@ type DistributionResp struct {
 
 // PurchaseOrderResp 采购单响应
 type PurchaseOrderResp struct {
-	ID           uint    `json:"id"`
-	MaterialName string  `json:"material_name"`
-	CategoryID   uint    `json:"category_id"`
-	Quantity     int     `json:"quantity"`
-	TotalAmount  float64 `json:"total_amount"`
-	UnitPrice    float64 `json:"unit_price"`
-	Notes        string  `json:"notes"`
-	PurchaserID  uint    `json:"purchaser_id"`
-	CreatedAt    string  `json:"created_at"`
+	ID           uint   `json:"id"`
+	MaterialName string `json:"material_name"`
+	CategoryID   uint   `json:"category_id"`
+	Quantity     int    `json:"quantity"`
+	TotalAmount  int64  `json:"total_amount"` // 单位：分
+	UnitPrice    int64  `json:"unit_price"`   // 单位：分
+	Notes        string `json:"notes"`
+	PurchaserID  uint   `json:"purchaser_id"`
+	CreatedAt    string `json:"created_at"`
 }
 
 // StockListResp 库存列表响应
@@ -148,7 +148,7 @@ func toCategoryResp(cat model.MaterialCategory) CategoryResp {
 		ID:        cat.ID,
 		Name:      cat.Name,
 		Note:      cat.Note,
-		CreatedAt: cat.CreatedAt.Format("2006-01-02 15:04:05"),
+		CreatedAt: cat.CreatedAt.Format("2006-01-02"),
 	}
 }
 
@@ -162,8 +162,8 @@ func toStockResp(s model.Stock) StockResp {
 		RemainingQty:    s.RemainingQty,
 		UnitPrice:       s.UnitPrice,
 		Source:          s.Source,
-		CreatedAt:       s.CreatedAt.Format("2006-01-02 15:04:05"),
-		UpdatedAt:       s.UpdatedAt.Format("2006-01-02 15:04:05"),
+		CreatedAt:       s.CreatedAt.Format("2006-01-02"),
+		UpdatedAt:       s.UpdatedAt.Format("2006-01-02"),
 	}
 }
 
@@ -175,7 +175,7 @@ func toDistributionResp(d model.Distribution) DistributionResp {
 		Quantity:   d.Quantity,
 		OperatorID: d.OperatorID,
 		Reason:     d.Reason,
-		CreatedAt:  d.CreatedAt.Format("2006-01-02 15:04:05"),
+		CreatedAt:  d.CreatedAt.Format("2006-01-02"),
 	}
 }
 
@@ -189,7 +189,7 @@ func toPurchaseOrderResp(po model.PurchaseOrder) PurchaseOrderResp {
 		UnitPrice:    po.UnitPrice,
 		Notes:        po.Notes,
 		PurchaserID:  po.PurchaserID,
-		CreatedAt:    po.CreatedAt.Format("2006-01-02 15:04:05"),
+		CreatedAt:    po.CreatedAt.Format("2006-01-02"),
 	}
 }
 
@@ -200,7 +200,7 @@ type ServiceInterface interface {
 	CreateCategory(ctx context.Context, name, note string, operatorRole string) (*model.MaterialCategory, error)
 	UpdateCategory(ctx context.Context, id uint, name, note string, operatorRole string) (*model.MaterialCategory, error)
 	DeleteCategory(ctx context.Context, id uint, operatorRole string) error
-	Purchase(ctx context.Context, materialName string, categoryID uint, quantity int, totalAmount float64, notes string, purchaserID uint, operatorRole string) (*model.Stock, error)
+	Purchase(ctx context.Context, materialName string, categoryID uint, quantity int, totalAmount int64, notes string, purchaserID uint, operatorRole string) (*model.Stock, error)
 	ListPurchaseOrders(ctx context.Context, page, pageSize int) (*PurchaseOrderListResult, error)
 	ListStock(ctx context.Context, categoryID uint, keyword string, page, pageSize int) (*StockListResult, error)
 	GetStock(ctx context.Context, id uint) (*model.Stock, error)
@@ -423,7 +423,7 @@ func (h *Handler) ListDistributions(c *gin.Context) {
 			Quantity:     d.Quantity,
 			OperatorID:   d.OperatorID,
 			Reason:       d.Reason,
-			CreatedAt:    d.CreatedAt.Format("2006-01-02 15:04:05"),
+			CreatedAt:    d.CreatedAt.Format("2006-01-02"),
 		})
 	}
 

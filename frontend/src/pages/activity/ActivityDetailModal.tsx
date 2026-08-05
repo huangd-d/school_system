@@ -1,4 +1,5 @@
-import { Modal, Descriptions, Table, Tag, Spin } from 'antd'
+import { Descriptions, Table, Tag, Spin } from 'antd'
+import DraggableModal from '@/components/DraggableModal'
 import { useQuery } from '@tanstack/react-query'
 import { getActivity } from '@/api/activity'
 import { listCampuses } from '@/api/campus'
@@ -62,7 +63,7 @@ export default function ActivityDetailModal({ open, activityId, onClose }: Props
   ]
 
   return (
-    <Modal
+    <DraggableModal
       title="活动详情"
       open={open}
       onCancel={onClose}
@@ -126,6 +127,6 @@ export default function ActivityDetailModal({ open, activityId, onClose }: Props
           />
         </div>
       ) : null}
-    </Modal>
+    </DraggableModal>
   )
 }

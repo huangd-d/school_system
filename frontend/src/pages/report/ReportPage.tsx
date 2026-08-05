@@ -79,8 +79,8 @@ export default function ReportPage() {
   const chartData = useMemo(() => {
     if (activityReport.data) {
       return [
-        { name: '总投资', value: activityReport.data.total_investment },
-        { name: '总摊销', value: activityReport.data.total_amortization },
+        { name: '总投资', value: activityReport.data.total_investment / 100 },
+        { name: '总摊销', value: activityReport.data.total_amortization / 100 },
       ]
     }
     return []
@@ -89,7 +89,7 @@ export default function ReportPage() {
   const pieData = useMemo(() => {
     return (categoryReport.data ?? []).map(c => ({
       name: c.category_name,
-      value: c.total_amount,
+      value: c.total_amount / 100,
     }))
   }, [categoryReport.data])
 
@@ -113,8 +113,8 @@ export default function ReportPage() {
           {activityReport.isLoading ? <Spin /> : activityReport.data ? (
             <div>
               <div className="grid grid-cols-3 gap-4 mb-6">
-                <Card><Statistic title="总投资" value={activityReport.data.total_investment} prefix="¥" precision={2} /></Card>
-                <Card><Statistic title="总摊销" value={activityReport.data.total_amortization} prefix="¥" precision={2} /></Card>
+                <Card><Statistic title="总投资" value={activityReport.data.total_investment / 100} prefix="¥" precision={2} /></Card>
+                <Card><Statistic title="总摊销" value={activityReport.data.total_amortization / 100} prefix="¥" precision={2} /></Card>
                 <Card><Statistic title="执行进度" value={`${activityReport.data.total_executed} / ${activityReport.data.planned_executions}`} /></Card>
               </div>
               <Card title="投资 vs 摊销">
@@ -150,7 +150,7 @@ export default function ReportPage() {
           {dateRangeReport.isLoading ? <Spin /> : dateRangeReport.data ? (
             <Card title="每日摊销趋势">
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={dateRangeReport.data}>
+                <LineChart data={(dateRangeReport.data ?? []).map(d => ({ ...d, daily_amount: d.daily_amount / 100 }))}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" />
                   <YAxis />
@@ -191,7 +191,7 @@ export default function ReportPage() {
               <div className="grid grid-cols-3 gap-4 mb-6">
                 <Card><Statistic title="校区" value={campusReport.data.campus_name} /></Card>
                 <Card><Statistic title="活动数" value={campusReport.data.activity_count} /></Card>
-                <Card><Statistic title="总投资" value={campusReport.data.total_investment} prefix="¥" precision={2} /></Card>
+                <Card><Statistic title="总投资" value={campusReport.data.total_investment / 100} prefix="¥" precision={2} /></Card>
               </div>
             </div>
           ) : <Empty />}
@@ -238,7 +238,7 @@ export default function ReportPage() {
                       title: '金额',
                       dataIndex: 'total_amount',
                       width: 120,
-                      render: (v: number) => `¥${v.toFixed(2)}`,
+                      render: (v: number) => `¥${(v / 100).toFixed(2)}`,
                     },
                   ]}
                 />

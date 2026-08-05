@@ -74,7 +74,7 @@ export default function DistributeTab({ categories, activities, isHQAdmin }: Pro
       title: '单价',
       dataIndex: 'unit_price',
       width: 80,
-      render: (v: number) => `¥${v.toFixed(2)}`,
+      render: (v: number) => `¥${(v / 100).toFixed(2)}`,
     },
     {
       title: '来源',

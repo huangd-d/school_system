@@ -26,6 +26,7 @@ type Repository interface {
 	// 配发
 	FindDistributionsByActivity(ctx context.Context, activityID uint) ([]model.Distribution, error)
 	FindStockByID(ctx context.Context, id uint) (*model.Stock, error)
+	FindStocksByIDs(ctx context.Context, ids []uint) (map[uint]model.Stock, error)
 
 	// 执行
 	SumExecutions(ctx context.Context, activityID uint) (int, error)
@@ -47,29 +48,126 @@ type Repository interface {
 	FindRecoveryItemsBySettlement(ctx context.Context, settlementID uint) ([]model.RecoveryItem, error)
 }
 
-// PreviewItem 结算预览项
+// PreviewItem 结算预览项（金额单位：分）
 type PreviewItem struct {
-	StockID       uint    `json:"stock_id"`
-	MaterialName  string  `json:"material_name"`
+	StockID        uint   `json:"stock_id"`
+	MaterialName   string `json:"material_name"`
 	DistributedQty int    `json:"distributed_qty"`
-	UsedQty       int     `json:"used_qty"`
-	RecoveryQty   int     `json:"recovery_qty"`
-	UnitPrice     float64 `json:"unit_price"`
-	CostDeduction float64 `json:"cost_deduction"`
+	UsedQty        int    `json:"used_qty"`
+	RecoveryQty    int    `json:"recovery_qty"`
+	UnitPrice      int64  `json:"unit_price"`
+	CostDeduction  int64  `json:"cost_deduction"`
 }
 
-// PreviewResult 结算预览结果
+// PreviewResult 结算预览结果（金额单位：分）
 type PreviewResult struct {
-	Items              []PreviewItem `json:"items"`
-	TotalReturnedAmount float64      `json:"total_returned_amount"`
-	ActivityName       string        `json:"activity_name"`
-	TotalExecuted      int           `json:"total_executed"`
-	PlannedExecutions  int           `json:"planned_executions"`
+	Items               []PreviewItem `json:"items"`
+	TotalReturnedAmount int64         `json:"total_returned_amount"`
+	ActivityName        string        `json:"activity_name"`
+	TotalExecuted       int           `json:"total_executed"`
+	PlannedExecutions   int           `json:"planned_executions"`
 }
 
 // ListByActivity 查询活动的所有结算记录
 func (s *Service) ListByActivity(ctx context.Context, activityID uint) ([]model.Settlement, error) {
 	return s.repo.FindByActivityID(ctx, activityID)
+}
+
+// SettlementOverviewItem 结算管理概览项（结算管理页表格数据，一次查询返回；金额单位：分）
+type SettlementOverviewItem struct {
+	ActivityID          uint   `json:"activity_id"`
+	ActivityName        string `json:"activity_name"`
+	Status              string `json:"status"`
+	PlannedExecutions   int    `json:"planned_executions"`
+	TotalExecuted       int    `json:"total_executed"`
+	TotalInvestment     int64  `json:"total_investment"`      // 配发投入总额 = Σ(配发量 × 单价)
+	TotalReturnedAmount int64  `json:"total_returned_amount"` // 已结算回收总额
+	SettledCost         int64  `json:"settled_cost"`          // 结算后物资成本 = 投入 − 回收
+}
+
+// Overview 结算管理概览：一次返回可结算/已结算活动的表格数据
+// （三次批量聚合，避免前端逐活动请求）
+func (s *Service) Overview(ctx context.Context) ([]SettlementOverviewItem, error) {
+	var activities []model.Activity
+	if err := s.db.WithContext(ctx).
+		Where("status IN ?", []string{model.ActivityEnded, model.ActivitySettled}).
+		Find(&activities).Error; err != nil {
+		return nil, apperror.Newf(apperror.ErrInternal.Code, "查询活动列表失败: %v", err)
+	}
+
+	// 1. 批量聚合配发投入总额（distributions JOIN stocks，分单位整数精确）
+	type investRow struct {
+		ActivityID uint
+		Total      int64
+	}
+	var investRows []investRow
+	if err := s.db.WithContext(ctx).
+		Table("distributions").
+		Select("distributions.activity_id, COALESCE(SUM(distributions.quantity * stocks.unit_price), 0) AS total").
+		Joins("LEFT JOIN stocks ON stocks.id = distributions.stock_id").
+		Group("distributions.activity_id").
+		Scan(&investRows).Error; err != nil {
+		return nil, apperror.Newf(apperror.ErrInternal.Code, "聚合配发投入失败: %v", err)
+	}
+	investMap := make(map[uint]int64, len(investRows))
+	for _, r := range investRows {
+		investMap[r.ActivityID] = r.Total
+	}
+
+	// 2. 批量聚合已结算回收总额
+	type returnedRow struct {
+		ActivityID uint
+		Total      int64
+	}
+	var returnedRows []returnedRow
+	if err := s.db.WithContext(ctx).
+		Model(&model.Settlement{}).
+		Select("activity_id, COALESCE(SUM(total_returned_amount), 0) AS total").
+		Where("status = ?", model.SettlementSettled).
+		Group("activity_id").
+		Scan(&returnedRows).Error; err != nil {
+		return nil, apperror.Newf(apperror.ErrInternal.Code, "聚合结算回收失败: %v", err)
+	}
+	returnedMap := make(map[uint]int64, len(returnedRows))
+	for _, r := range returnedRows {
+		returnedMap[r.ActivityID] = r.Total
+	}
+
+	// 3. 批量聚合已执行次数
+	type execRow struct {
+		ActivityID uint
+		Total      int
+	}
+	var execRows []execRow
+	if err := s.db.WithContext(ctx).
+		Model(&model.ExecutionRecord{}).
+		Select("activity_id, COALESCE(SUM(count), 0) AS total").
+		Group("activity_id").
+		Scan(&execRows).Error; err != nil {
+		return nil, apperror.Newf(apperror.ErrInternal.Code, "聚合执行次数失败: %v", err)
+	}
+	execMap := make(map[uint]int, len(execRows))
+	for _, r := range execRows {
+		execMap[r.ActivityID] = r.Total
+	}
+
+	result := make([]SettlementOverviewItem, 0, len(activities))
+	for _, a := range activities {
+		investment := investMap[a.ID]
+		returned := returnedMap[a.ID]
+		result = append(result, SettlementOverviewItem{
+			ActivityID:          a.ID,
+			ActivityName:        a.Name,
+			Status:              a.Status,
+			PlannedExecutions:   a.PlannedExecutions,
+			TotalExecuted:       execMap[a.ID],
+			TotalInvestment:     investment,
+			TotalReturnedAmount: returned,
+			SettledCost:         investment - returned, // 整数精确
+		})
+	}
+
+	return result, nil
 }
 
 // Service 结算业务逻辑
@@ -134,17 +232,6 @@ func (s *Service) Execute(ctx context.Context, activityID uint, operatorID uint)
 		return nil, apperror.ErrSettlementActivityNotEnded
 	}
 
-	// 检查是否已有有效结算记录
-	existing, err := s.repo.FindByActivityID(ctx, activityID)
-	if err != nil {
-		return nil, apperror.Newf(apperror.ErrInternal.Code, "查询结算记录失败: %v", err)
-	}
-	for _, st := range existing {
-		if st.Status == model.SettlementSettled {
-			return nil, apperror.ErrSettlementActiveExists
-		}
-	}
-
 	items, totalReturned, err := s.computeRecoveryItems(ctx, activity)
 	if err != nil {
 		return nil, err
@@ -156,12 +243,33 @@ func (s *Service) Execute(ctx context.Context, activityID uint, operatorID uint)
 		// 用事务 db 创建临时 repo
 		txRepo := NewRepository(tx)
 
-		// 1. 创建回收 Stock 记录
+		// 0. 事务内复查是否已有有效结算记录（并发防护：与唯一索引双重兜底）
+		existing, checkErr := txRepo.FindByActivityID(ctx, activityID)
+		if checkErr != nil {
+			return apperror.Newf(apperror.ErrInternal.Code, "查询结算记录失败: %v", checkErr)
+		}
+		for _, st := range existing {
+			if st.Status == model.SettlementSettled {
+				return apperror.ErrSettlementActiveExists
+			}
+		}
+
+		// 1. 创建回收 Stock 记录（先批量查询原库存，消除 N+1）
+		recoverIDs := make([]uint, 0, len(items))
 		for _, item := range items {
 			if item.RecoveryQty > 0 {
-				originalStock, stockErr := txRepo.FindStockByID(ctx, item.StockID)
-				if stockErr != nil {
-					return apperror.Newf(apperror.ErrInternal.Code, "查询原库存失败: %v", stockErr)
+				recoverIDs = append(recoverIDs, item.StockID)
+			}
+		}
+		stockMap, stockErr := txRepo.FindStocksByIDs(ctx, recoverIDs)
+		if stockErr != nil {
+			return apperror.Newf(apperror.ErrInternal.Code, "查询原库存失败: %v", stockErr)
+		}
+		for _, item := range items {
+			if item.RecoveryQty > 0 {
+				originalStock, ok := stockMap[item.StockID]
+				if !ok {
+					return apperror.Newf(apperror.ErrInternal.Code, "查询原库存失败: 库存 %d 不存在", item.StockID)
 				}
 				newStock := &model.Stock{
 					PurchaseOrderID: 0, // 回收无采购单
@@ -316,8 +424,8 @@ func (s *Service) Reverse(ctx context.Context, settlementID uint, operatorID uin
 
 // ---- 内部辅助方法 ----
 
-// computeRecoveryItems 计算回收物资明细
-func (s *Service) computeRecoveryItems(ctx context.Context, activity *model.Activity) ([]PreviewItem, float64, error) {
+// computeRecoveryItems 计算回收物资明细（金额单位：分，整数运算无精度误差）
+func (s *Service) computeRecoveryItems(ctx context.Context, activity *model.Activity) ([]PreviewItem, int64, error) {
 	distributions, err := s.repo.FindDistributionsByActivity(ctx, activity.ID)
 	if err != nil {
 		return nil, 0, apperror.Newf(apperror.ErrInternal.Code, "查询配发记录失败: %v", err)
@@ -338,7 +446,7 @@ func (s *Service) computeRecoveryItems(ctx context.Context, activity *model.Acti
 	}
 
 	items := make([]PreviewItem, 0, len(distributions))
-	var totalReturned float64
+	var totalReturned int64
 
 	for _, d := range distributions {
 		stock, err := s.repo.FindStockByID(ctx, d.StockID)
@@ -355,7 +463,7 @@ func (s *Service) computeRecoveryItems(ctx context.Context, activity *model.Acti
 		}
 
 		recoveryQty := d.Quantity - usedQty
-		costDeduction := float64(recoveryQty) * stock.UnitPrice
+		costDeduction := int64(recoveryQty) * stock.UnitPrice // 整数乘法，精确到分
 
 		items = append(items, PreviewItem{
 			StockID:        d.StockID,
@@ -369,9 +477,6 @@ func (s *Service) computeRecoveryItems(ctx context.Context, activity *model.Acti
 
 		totalReturned += costDeduction
 	}
-
-	// 四舍五入保留两位小数
-	totalReturned = math.Round(totalReturned*100) / 100
 
 	return items, totalReturned, nil
 }
@@ -389,13 +494,23 @@ func (s *Service) recalculateSnapshotsTx(ctx context.Context, txRepo Repository,
 		return apperror.Newf(apperror.ErrInternal.Code, "查询配发记录失败: %v", err)
 	}
 
-	var totalDistValue float64
-	for _, d := range distributions {
-		stock, err := txRepo.FindStockByID(ctx, d.StockID)
+	var totalDistValue int64
+	if len(distributions) > 0 {
+		distStockIDs := make([]uint, 0, len(distributions))
+		for _, d := range distributions {
+			distStockIDs = append(distStockIDs, d.StockID)
+		}
+		stockMap, err := txRepo.FindStocksByIDs(ctx, distStockIDs)
 		if err != nil {
 			return apperror.Newf(apperror.ErrInternal.Code, "查询库存失败: %v", err)
 		}
-		totalDistValue += float64(d.Quantity) * stock.UnitPrice
+		for _, d := range distributions {
+			stock, ok := stockMap[d.StockID]
+			if !ok {
+				return apperror.Newf(apperror.ErrInternal.Code, "查询库存失败: 库存 %d 不存在", d.StockID)
+			}
+			totalDistValue += int64(d.Quantity) * stock.UnitPrice
+		}
 	}
 
 	// 3. 计算已结算回收总额（status="settled" 的结算记录）
@@ -404,7 +519,7 @@ func (s *Service) recalculateSnapshotsTx(ctx context.Context, txRepo Repository,
 		return apperror.Newf(apperror.ErrInternal.Code, "查询结算记录失败: %v", err)
 	}
 
-	var totalRecovered float64
+	var totalRecovered int64
 	for _, st := range settlements {
 		if st.Status == model.SettlementSettled {
 			recoveryItems, err := txRepo.FindRecoveryItemsBySettlement(ctx, st.ID)
@@ -417,7 +532,7 @@ func (s *Service) recalculateSnapshotsTx(ctx context.Context, txRepo Repository,
 		}
 	}
 
-	// 4. 摊销基数 = 配发总额 - 已回收总额
+	// 4. 摊销基数 = 配发总额 - 已回收总额（单位：分，整数精确）
 	amortizationBase := totalDistValue - totalRecovered
 
 	// 5. 按日统计执行次数
@@ -427,33 +542,54 @@ func (s *Service) recalculateSnapshotsTx(ctx context.Context, txRepo Repository,
 	}
 
 	// 6. 逐日生成摊销快照
-	planned := activity.PlannedExecutions
-	currentDate := activity.StartDate
+	//    每日 = 基数×当日执行/计划次数（向下取整，保证累计不超目标）；
+	//    总目标 = round(基数×总执行/计划)；尾差归最后一个执行日，保证 Σ(每日摊销) == 总目标（严格对账）。
+	planned := int64(activity.PlannedExecutions)
 	endDate := activity.EndDate
 
-	for !currentDate.After(endDate) {
-		dateKey := currentDate.Format("2006-01-02")
-		dayCount := dailyCounts[dateKey]
+	// 收集日期序列
+	var dates []time.Time
+	for d := activity.StartDate; !d.After(endDate); d = d.AddDate(0, 0, 1) {
+		dates = append(dates, d)
+	}
 
-		var dailyAmount float64
-		if planned > 0 {
-			dailyAmount = amortizationBase * float64(dayCount) / float64(planned)
+	// 总执行次数与目标总额
+	var totalExec int64
+	for _, cnt := range dailyCounts {
+		totalExec += int64(cnt)
+	}
+	var targetTotal int64
+	if planned > 0 {
+		targetTotal = (amortizationBase*totalExec + planned/2) / planned // 四舍五入到分
+	}
+
+	amounts := make([]int64, len(dates))
+	var allocated int64
+	lastExecIdx := -1
+	for i, d := range dates {
+		dayCount := dailyCounts[d.Format("2006-01-02")]
+		if planned > 0 && dayCount > 0 {
+			amounts[i] = amortizationBase * int64(dayCount) / planned // 向下取整到分
+			allocated += amounts[i]
+			lastExecIdx = i
 		}
-		dailyAmount = math.Round(dailyAmount*100) / 100
+	}
+	if lastExecIdx >= 0 {
+		amounts[lastExecIdx] += targetTotal - allocated // 尾差归最后一个执行日
+	}
 
+	for i, d := range dates {
 		snapshot := &model.AmortizationSnapshot{
 			ActivityID:       activity.ID,
-			Date:             currentDate,
-			ExecutionCount:   dayCount,
-			AmortizationBase: math.Round(amortizationBase*100) / 100,
-			DailyAmount:      dailyAmount,
+			Date:             d,
+			ExecutionCount:   dailyCounts[d.Format("2006-01-02")],
+			AmortizationBase: amortizationBase,
+			DailyAmount:      amounts[i],
 		}
 
 		if err := txRepo.UpsertSnapshot(ctx, snapshot); err != nil {
 			return apperror.Newf(apperror.ErrInternal.Code, "写入摊销快照失败: %v", err)
 		}
-
-		currentDate = currentDate.AddDate(0, 0, 1)
 	}
 
 	return nil

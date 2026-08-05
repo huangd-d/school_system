@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Button, Input, Select, Space, Table } from 'antd'
+import { Button, Input, Select, Table } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { listPurchaseOrders, listStock } from '@/api/material'
@@ -60,13 +60,13 @@ export default function PurchaseStockTab({ categories, isHQAdmin }: Props) {
       title: '单价',
       dataIndex: 'unit_price',
       width: 80,
-      render: (v: number) => `¥${v.toFixed(2)}`,
+      render: (v: number) => `¥${(v / 100).toFixed(2)}`,
     },
     {
       title: '总金额',
       dataIndex: 'total_amount',
       width: 100,
-      render: (v: number) => `¥${v.toFixed(2)}`,
+      render: (v: number) => `¥${(v / 100).toFixed(2)}`,
     },
     { title: '备注', dataIndex: 'notes', ellipsis: true },
     { title: '采购人', dataIndex: 'purchaser_id', width: 80 },
@@ -95,7 +95,7 @@ export default function PurchaseStockTab({ categories, isHQAdmin }: Props) {
       title: '单价',
       dataIndex: 'unit_price',
       width: 80,
-      render: (v: number) => `¥${v.toFixed(2)}`,
+      render: (v: number) => `¥${(v / 100).toFixed(2)}`,
     },
     {
       title: '来源',

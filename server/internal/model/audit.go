@@ -11,7 +11,7 @@ type AuditLog struct {
 	EntityID      uint      `gorm:"not null" json:"entity_id"`                   // 操作对象ID
 	BeforeValue   string    `gorm:"type:text" json:"before_value"`               // 变更前值
 	AfterValue    string    `gorm:"type:text" json:"after_value"`                 // 变更后值
-	ImpactAmount  float64   `json:"impact_amount"`                               // 影响金额
+	ImpactAmount  int64     `json:"impact_amount"` // 影响金额（单位：分）
 	CreatedAt     time.Time `json:"created_at"`
 }
 

@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react'
-import { Descriptions, Form, Input, InputNumber, Modal, Tag, message } from 'antd'
+import { Descriptions, Form, Input, InputNumber, Tag, message } from 'antd'
+import DraggableModal from '@/components/DraggableModal'
 import { useMutation } from '@tanstack/react-query'
 import { adjustDistribution } from '@/api/material'
 import type { AdjustDistributionForm, Distribution, StockItem } from '@/types'
@@ -59,7 +60,7 @@ export default function AdjustDistributionModal({
   if (!distribution || !stock) return null
 
   return (
-    <Modal
+    <DraggableModal
       title="调整派发"
       open={open}
       onOk={handleSubmit}
@@ -120,6 +121,6 @@ export default function AdjustDistributionModal({
           <Input.TextArea rows={2} placeholder="必填，用于审计追踪" />
         </Form.Item>
       </Form>
-    </Modal>
+    </DraggableModal>
   )
 }

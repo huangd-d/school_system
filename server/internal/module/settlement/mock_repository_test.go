@@ -18,6 +18,7 @@ type MockSettlementRepo struct {
 	UpdateActivityStatusFn            func(ctx context.Context, id uint, status string) error
 	FindDistributionsByActivityFn     func(ctx context.Context, activityID uint) ([]model.Distribution, error)
 	FindStockByIDFn                   func(ctx context.Context, id uint) (*model.Stock, error)
+	FindStocksByIDsFn                 func(ctx context.Context, ids []uint) (map[uint]model.Stock, error)
 	SumExecutionsFn                   func(ctx context.Context, activityID uint) (int, error)
 	FindExecutionsByDateRangeFn       func(ctx context.Context, activityID uint, start, end time.Time) ([]model.ExecutionRecord, error)
 	CreateStockFn                     func(ctx context.Context, stock *model.Stock) error
@@ -60,6 +61,16 @@ func (m *MockSettlementRepo) FindDistributionsByActivity(ctx context.Context, ac
 func (m *MockSettlementRepo) FindStockByID(ctx context.Context, id uint) (*model.Stock, error) {
 	if m.FindStockByIDFn != nil { return m.FindStockByIDFn(ctx, id) }
 	return nil, nil
+}
+func (m *MockSettlementRepo) FindStocksByIDs(ctx context.Context, ids []uint) (map[uint]model.Stock, error) {
+	if m.FindStocksByIDsFn != nil { return m.FindStocksByIDsFn(ctx, ids) }
+	result := make(map[uint]model.Stock)
+	for _, id := range ids {
+		if stock, err := m.FindStockByID(ctx, id); err == nil && stock != nil {
+			result[id] = *stock
+		}
+	}
+	return result, nil
 }
 func (m *MockSettlementRepo) SumExecutions(ctx context.Context, activityID uint) (int, error) {
 	if m.SumExecutionsFn != nil { return m.SumExecutionsFn(ctx, activityID) }

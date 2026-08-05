@@ -135,8 +135,8 @@ func TestMaterialRepo_CreatePurchaseOrder(t *testing.T) {
 		MaterialName: "语文教材",
 		CategoryID:   1,
 		Quantity:     100,
-		TotalAmount:  5000,
-		UnitPrice:    50.0,
+		TotalAmount:  500000,
+		UnitPrice:    5000,
 		PurchaserID:  1,
 	}
 	err := repo.CreatePurchaseOrder(context.Background(), po)
@@ -154,8 +154,8 @@ func TestMaterialRepo_FindPurchaseOrders_Pagination(t *testing.T) {
 			MaterialName: "测试物资",
 			CategoryID:   1,
 			Quantity:     10,
-			TotalAmount:  100,
-			UnitPrice:    10.0,
+			TotalAmount:  10000,
+			UnitPrice:    1000,
 			PurchaserID:  1,
 		}
 		require.NoError(t, db.Create(po).Error)
@@ -188,7 +188,7 @@ func TestMaterialRepo_CreateStock(t *testing.T) {
 		MaterialName:    "语文教材",
 		TotalQuantity:   100,
 		RemainingQty:    100,
-		UnitPrice:       50.0,
+		UnitPrice:       5000,
 		Source:          "purchase",
 	}
 	err := repo.CreateStock(context.Background(), stock)
@@ -201,8 +201,8 @@ func TestMaterialRepo_FindStockWithFilter_Category(t *testing.T) {
 	repo := material.NewRepository(db)
 
 	// 创建两个不同分类的库存
-	s1 := &model.Stock{PurchaseOrderID: 1, CategoryID: 1, MaterialName: "分类1物资", TotalQuantity: 10, RemainingQty: 10, UnitPrice: 10, Source: "purchase"}
-	s2 := &model.Stock{PurchaseOrderID: 2, CategoryID: 2, MaterialName: "分类2物资", TotalQuantity: 20, RemainingQty: 20, UnitPrice: 20, Source: "purchase"}
+	s1 := &model.Stock{PurchaseOrderID: 1, CategoryID: 1, MaterialName: "分类1物资", TotalQuantity: 10, RemainingQty: 10, UnitPrice: 1000, Source: "purchase"}
+	s2 := &model.Stock{PurchaseOrderID: 2, CategoryID: 2, MaterialName: "分类2物资", TotalQuantity: 20, RemainingQty: 20, UnitPrice: 2000, Source: "purchase"}
 	require.NoError(t, db.Create(s1).Error)
 	require.NoError(t, db.Create(s2).Error)
 
@@ -217,8 +217,8 @@ func TestMaterialRepo_FindStockWithFilter_Keyword(t *testing.T) {
 	db := testutil.NewTestDB(t)
 	repo := material.NewRepository(db)
 
-	s1 := &model.Stock{PurchaseOrderID: 1, CategoryID: 1, MaterialName: "语文教材", TotalQuantity: 10, RemainingQty: 10, UnitPrice: 10, Source: "purchase"}
-	s2 := &model.Stock{PurchaseOrderID: 2, CategoryID: 1, MaterialName: "数学教材", TotalQuantity: 20, RemainingQty: 20, UnitPrice: 20, Source: "purchase"}
+	s1 := &model.Stock{PurchaseOrderID: 1, CategoryID: 1, MaterialName: "语文教材", TotalQuantity: 10, RemainingQty: 10, UnitPrice: 1000, Source: "purchase"}
+	s2 := &model.Stock{PurchaseOrderID: 2, CategoryID: 1, MaterialName: "数学教材", TotalQuantity: 20, RemainingQty: 20, UnitPrice: 2000, Source: "purchase"}
 	require.NoError(t, db.Create(s1).Error)
 	require.NoError(t, db.Create(s2).Error)
 
@@ -233,7 +233,7 @@ func TestMaterialRepo_UpdateStock(t *testing.T) {
 	db := testutil.NewTestDB(t)
 	repo := material.NewRepository(db)
 
-	stock := &model.Stock{PurchaseOrderID: 1, CategoryID: 1, MaterialName: "语文教材", TotalQuantity: 100, RemainingQty: 100, UnitPrice: 50, Source: "purchase"}
+	stock := &model.Stock{PurchaseOrderID: 1, CategoryID: 1, MaterialName: "语文教材", TotalQuantity: 100, RemainingQty: 100, UnitPrice: 5000, Source: "purchase"}
 	require.NoError(t, db.Create(stock).Error)
 
 	stock.RemainingQty = 80
@@ -339,7 +339,7 @@ func TestMaterialRepo_CreateAuditLog(t *testing.T) {
 		EntityType:    "stock",
 		EntityID:      1,
 		AfterValue:    "name:教材,qty:100,amount:5000",
-		ImpactAmount:  5000,
+		ImpactAmount:  500000,
 	}
 	err := repo.CreateAuditLog(context.Background(), log)
 	require.NoError(t, err)
@@ -360,8 +360,8 @@ func TestMaterialRepo_CountPurchasesByCategory(t *testing.T) {
 			MaterialName: "测试物资",
 			CategoryID:   1,
 			Quantity:     10,
-			TotalAmount:  100,
-			UnitPrice:    10.0,
+			TotalAmount:  10000,
+			UnitPrice:    1000,
 			PurchaserID:  1,
 		}
 		require.NoError(t, db.Create(po).Error)
@@ -386,8 +386,8 @@ func TestMaterialRepo_FindDistributionsWithFilter_All(t *testing.T) {
 	repo := material.NewRepository(db)
 
 	// 创建库存
-	s1 := &model.Stock{PurchaseOrderID: 1, CategoryID: 1, MaterialName: "语文教材", TotalQuantity: 100, RemainingQty: 100, UnitPrice: 50, Source: "purchase"}
-	s2 := &model.Stock{PurchaseOrderID: 2, CategoryID: 1, MaterialName: "数学教材", TotalQuantity: 50, RemainingQty: 50, UnitPrice: 30, Source: "purchase"}
+	s1 := &model.Stock{PurchaseOrderID: 1, CategoryID: 1, MaterialName: "语文教材", TotalQuantity: 100, RemainingQty: 100, UnitPrice: 5000, Source: "purchase"}
+	s2 := &model.Stock{PurchaseOrderID: 2, CategoryID: 1, MaterialName: "数学教材", TotalQuantity: 50, RemainingQty: 50, UnitPrice: 3000, Source: "purchase"}
 	require.NoError(t, db.Create(s1).Error)
 	require.NoError(t, db.Create(s2).Error)
 
@@ -411,7 +411,7 @@ func TestMaterialRepo_FindDistributionsWithFilter_ByActivity(t *testing.T) {
 	db := testutil.NewTestDB(t)
 	repo := material.NewRepository(db)
 
-	s1 := &model.Stock{PurchaseOrderID: 1, CategoryID: 1, MaterialName: "语文教材", TotalQuantity: 100, RemainingQty: 100, UnitPrice: 50, Source: "purchase"}
+	s1 := &model.Stock{PurchaseOrderID: 1, CategoryID: 1, MaterialName: "语文教材", TotalQuantity: 100, RemainingQty: 100, UnitPrice: 5000, Source: "purchase"}
 	require.NoError(t, db.Create(s1).Error)
 
 	d1 := &model.Distribution{StockID: s1.ID, ActivityID: 1, Quantity: 10, OperatorID: 1}
@@ -430,8 +430,8 @@ func TestMaterialRepo_FindDistributionsWithFilter_ByKeyword(t *testing.T) {
 	db := testutil.NewTestDB(t)
 	repo := material.NewRepository(db)
 
-	s1 := &model.Stock{PurchaseOrderID: 1, CategoryID: 1, MaterialName: "语文教材", TotalQuantity: 100, RemainingQty: 100, UnitPrice: 50, Source: "purchase"}
-	s2 := &model.Stock{PurchaseOrderID: 2, CategoryID: 1, MaterialName: "数学教材", TotalQuantity: 50, RemainingQty: 50, UnitPrice: 30, Source: "purchase"}
+	s1 := &model.Stock{PurchaseOrderID: 1, CategoryID: 1, MaterialName: "语文教材", TotalQuantity: 100, RemainingQty: 100, UnitPrice: 5000, Source: "purchase"}
+	s2 := &model.Stock{PurchaseOrderID: 2, CategoryID: 1, MaterialName: "数学教材", TotalQuantity: 50, RemainingQty: 50, UnitPrice: 3000, Source: "purchase"}
 	require.NoError(t, db.Create(s1).Error)
 	require.NoError(t, db.Create(s2).Error)
 
@@ -451,7 +451,7 @@ func TestMaterialRepo_FindDistributionsWithFilter_ByDateRange(t *testing.T) {
 	db := testutil.NewTestDB(t)
 	repo := material.NewRepository(db)
 
-	s1 := &model.Stock{PurchaseOrderID: 1, CategoryID: 1, MaterialName: "语文教材", TotalQuantity: 100, RemainingQty: 100, UnitPrice: 50, Source: "purchase"}
+	s1 := &model.Stock{PurchaseOrderID: 1, CategoryID: 1, MaterialName: "语文教材", TotalQuantity: 100, RemainingQty: 100, UnitPrice: 5000, Source: "purchase"}
 	require.NoError(t, db.Create(s1).Error)
 
 	// 创建派发记录（SQLite 使用当前时间）
@@ -475,7 +475,7 @@ func TestMaterialRepo_FindDistributionsWithFilter_Pagination(t *testing.T) {
 	db := testutil.NewTestDB(t)
 	repo := material.NewRepository(db)
 
-	s1 := &model.Stock{PurchaseOrderID: 1, CategoryID: 1, MaterialName: "语文教材", TotalQuantity: 100, RemainingQty: 100, UnitPrice: 50, Source: "purchase"}
+	s1 := &model.Stock{PurchaseOrderID: 1, CategoryID: 1, MaterialName: "语文教材", TotalQuantity: 100, RemainingQty: 100, UnitPrice: 5000, Source: "purchase"}
 	require.NoError(t, db.Create(s1).Error)
 
 	for i := 0; i < 3; i++ {

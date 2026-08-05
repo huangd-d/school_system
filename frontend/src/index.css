@@ -1,1 +1,9 @@
 @import "tailwindcss";
+
+/* 弹框标题栏可拖动 */
+.ant-modal-header {
+  cursor: move;
+}
+.ant-modal-header .ant-modal-close {
+  cursor: pointer;
+}

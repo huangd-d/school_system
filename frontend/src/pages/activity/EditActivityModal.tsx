@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
-import { Form, Input, InputNumber, Modal, Select, message } from 'antd'
+import { Form, Input, InputNumber, Select, message } from 'antd'
+import DraggableModal from '@/components/DraggableModal'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { updateActivity } from '@/api/activity'
 import { listUsers } from '@/api/user'
@@ -84,7 +85,7 @@ export default function EditActivityModal({ open, activity, onClose, onSuccess }
   if (!activity) return null
 
   return (
-    <Modal
+    <DraggableModal
       title="编辑活动"
       open={open}
       onOk={() => form.submit()}
@@ -127,6 +128,6 @@ export default function EditActivityModal({ open, activity, onClose, onSuccess }
           />
         </Form.Item>
       </Form>
-    </Modal>
+    </DraggableModal>
   )
 }

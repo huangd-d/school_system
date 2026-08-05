@@ -242,11 +242,11 @@ func TestMaterialHandler_DeleteCategory_InvalidID(t *testing.T) {
 
 func TestMaterialHandler_Purchase_Success(t *testing.T) {
 	mockSvc := &MockMaterialService{
-		PurchaseFn: func(ctx context.Context, materialName string, categoryID uint, quantity int, totalAmount float64, notes string, purchaserID uint, operatorRole string) (*model.Stock, error) {
+		PurchaseFn: func(ctx context.Context, materialName string, categoryID uint, quantity int, totalAmount int64, notes string, purchaserID uint, operatorRole string) (*model.Stock, error) {
 			assert.Equal(t, "语文教材", materialName)
 			assert.Equal(t, uint(1), categoryID)
 			assert.Equal(t, 100, quantity)
-			return &model.Stock{ID: 10, MaterialName: materialName, TotalQuantity: quantity, RemainingQty: quantity, UnitPrice: 50.0, Source: "purchase"}, nil
+			return &model.Stock{ID: 10, MaterialName: materialName, TotalQuantity: quantity, RemainingQty: quantity, UnitPrice: 5000, Source: "purchase"}, nil
 		},
 	}
 	h := material.NewHandler(mockSvc)
@@ -255,7 +255,7 @@ func TestMaterialHandler_Purchase_Success(t *testing.T) {
 		"material_name": "语文教材",
 		"category_id":   1,
 		"quantity":      100,
-		"total_amount":  5000,
+		"total_amount":  500000,
 	}))
 	setAuth(c, 1, 1, model.RoleHQAdmin)
 
@@ -453,7 +453,7 @@ func TestMaterialHandler_ListPurchaseOrders_Success(t *testing.T) {
 		ListPurchaseOrdersFn: func(ctx context.Context, page, pageSize int) (*material.PurchaseOrderListResult, error) {
 			return &material.PurchaseOrderListResult{
 				Orders: []model.PurchaseOrder{
-					{ID: 1, MaterialName: "语文教材", Quantity: 100, TotalAmount: 5000},
+					{ID: 1, MaterialName: "语文教材", Quantity: 100, TotalAmount: 500000},
 				},
 				Total: 1,
 			}, nil

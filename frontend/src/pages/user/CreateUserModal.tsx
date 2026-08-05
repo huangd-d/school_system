@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
-import { Form, Input, Modal, Select, message } from 'antd'
+import { Form, Input, Select, message } from 'antd'
+import DraggableModal from '@/components/DraggableModal'
 import { useMutation } from '@tanstack/react-query'
 import { createUser } from '@/api/user'
 import { listCampuses } from '@/api/campus'
@@ -49,7 +50,7 @@ export default function CreateUserModal({ open, onClose, onSuccess }: Props) {
   }
 
   return (
-    <Modal
+    <DraggableModal
       title="新建账户"
       open={open}
       onOk={() => form.submit()}
@@ -84,6 +85,6 @@ export default function CreateUserModal({ open, onClose, onSuccess }: Props) {
           />
         </Form.Item>
       </Form>
-    </Modal>
+    </DraggableModal>
   )
 }

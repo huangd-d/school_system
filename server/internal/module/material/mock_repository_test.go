@@ -234,7 +234,7 @@ type MockMaterialService struct {
 	CreateCategoryFn      func(ctx context.Context, name, note string, operatorRole string) (*model.MaterialCategory, error)
 	UpdateCategoryFn      func(ctx context.Context, id uint, name, note string, operatorRole string) (*model.MaterialCategory, error)
 	DeleteCategoryFn      func(ctx context.Context, id uint, operatorRole string) error
-	PurchaseFn            func(ctx context.Context, materialName string, categoryID uint, quantity int, totalAmount float64, notes string, purchaserID uint, operatorRole string) (*model.Stock, error)
+	PurchaseFn            func(ctx context.Context, materialName string, categoryID uint, quantity int, totalAmount int64, notes string, purchaserID uint, operatorRole string) (*model.Stock, error)
 	ListPurchaseOrdersFn  func(ctx context.Context, page, pageSize int) (*material.PurchaseOrderListResult, error)
 	ListStockFn           func(ctx context.Context, categoryID uint, keyword string, page, pageSize int) (*material.StockListResult, error)
 	GetStockFn               func(ctx context.Context, id uint) (*model.Stock, error)
@@ -272,7 +272,7 @@ func (m *MockMaterialService) DeleteCategory(ctx context.Context, id uint, opera
 	return nil
 }
 
-func (m *MockMaterialService) Purchase(ctx context.Context, materialName string, categoryID uint, quantity int, totalAmount float64, notes string, purchaserID uint, operatorRole string) (*model.Stock, error) {
+func (m *MockMaterialService) Purchase(ctx context.Context, materialName string, categoryID uint, quantity int, totalAmount int64, notes string, purchaserID uint, operatorRole string) (*model.Stock, error) {
 	if m.PurchaseFn != nil {
 		return m.PurchaseFn(ctx, materialName, categoryID, quantity, totalAmount, notes, purchaserID, operatorRole)
 	}

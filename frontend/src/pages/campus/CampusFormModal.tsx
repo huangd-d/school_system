@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
-import { Form, Input, Modal, Select, message } from 'antd'
+import { Form, Input, Select, message } from 'antd'
+import DraggableModal from '@/components/DraggableModal'
 import { useMutation } from '@tanstack/react-query'
 import { createCampus, updateCampus } from '@/api/campus'
 import type { Campus, CampusCreateForm, CampusUpdateForm } from '@/types'
@@ -65,7 +66,7 @@ export default function CampusFormModal({ open, campus, onClose, onSuccess }: Pr
   }
 
   return (
-    <Modal
+    <DraggableModal
       title={isEdit ? '编辑校区' : '新建校区'}
       open={open}
       onOk={handleSubmit}
@@ -102,6 +103,6 @@ export default function CampusFormModal({ open, campus, onClose, onSuccess }: Pr
           </Form.Item>
         )}
       </Form>
-    </Modal>
+    </DraggableModal>
   )
 }

@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Button, Modal, Space, Table } from 'antd'
+import { Button, Table } from 'antd'
+import DraggableModal from '@/components/DraggableModal'
 import { EditOutlined } from '@ant-design/icons'
 import type { Distribution, StockItem } from '@/types'
 import AdjustDistributionModal from './AdjustDistributionModal'
@@ -53,7 +54,7 @@ export default function DistributionListModal({
 
   return (
     <>
-      <Modal
+      <DraggableModal
         title="派发记录"
         open={open}
         onCancel={onClose}
@@ -64,7 +65,7 @@ export default function DistributionListModal({
         {stock && (
           <div className="mb-3 text-sm text-gray-500">
             物资：{stock.material_name} | 库存余量：{stock.remaining_qty} |
-            单价：¥{stock.unit_price.toFixed(2)}
+            单价：¥{(stock.unit_price / 100).toFixed(2)}
           </div>
         )}
         <Table
@@ -75,7 +76,7 @@ export default function DistributionListModal({
           size="small"
           pagination={false}
         />
-      </Modal>
+      </DraggableModal>
 
       <AdjustDistributionModal
         open={adjustOpen}

@@ -100,6 +100,7 @@ var (
 	ErrSettlementAlreadyReversed   = New(45005, "该结算记录已被回撤，无法再次回撤")
 	ErrSettlementNoDistribution    = New(45006, "该活动没有配发物资，无需结算")
 	ErrSettlementAnomaly           = New(45007, "数据异常：已使用量超过配发量，禁止生成回收记录")
+	ErrSettlementPermDenied        = New(45008, "仅总部管理员可操作结算")
 )
 
 // ---------- 报表（46xxx）----------

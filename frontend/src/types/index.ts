@@ -204,14 +204,14 @@ export interface PurchaseOrder {
   material_name: string
   category_id: number
   quantity: number
-  total_amount: number
-  unit_price: number
+  total_amount: number // 单位：分
+  unit_price: number // 单位：分
   notes: string
   purchaser_id: number
   created_at: string
 }
 
-/** 采购请求 — 对齐后端 PurchaseReq */
+/** 采购请求 — 对齐后端 PurchaseReq（total_amount 单位：分，提交前由元 ×100） */
 export interface PurchaseForm {
   material_name: string
   category_id: number
@@ -230,7 +230,7 @@ export interface StockItem {
   material_name: string
   total_quantity: number
   remaining_qty: number
-  unit_price: number
+  unit_price: number // 单位：分
   source: string
   created_at: string
   updated_at: string
@@ -298,7 +298,7 @@ export interface Settlement {
   activity_id: number
   status: 'settled' | 'reversed'
   operator_id: number
-  total_returned_amount: number
+  total_returned_amount: number // 单位：分
   created_at: string
   recovery_items?: RecoveryItem[]
 }
@@ -309,7 +309,7 @@ export interface RecoveryItem {
   settlement_id: number
   stock_id: number
   quantity: number
-  cost_deduction: number
+  cost_deduction: number // 单位：分
 }
 
 /** 结算预览项 */
@@ -319,17 +319,29 @@ export interface SettlementPreviewItem {
   distributed_qty: number
   used_qty: number
   recovery_qty: number
-  unit_price: number
-  cost_deduction: number
+  unit_price: number // 单位：分
+  cost_deduction: number // 单位：分
 }
 
 /** 结算预览结果 */
 export interface SettlementPreview {
   items: SettlementPreviewItem[]
-  total_returned_amount: number
+  total_returned_amount: number // 单位：分
   activity_name: string
   total_executed: number
   planned_executions: number
+}
+
+/** 结算管理概览项（GET /settlements/overview 一次返回表格数据） */
+export interface SettlementOverviewItem {
+  activity_id: number
+  activity_name: string
+  status: ActivityStatus
+  planned_executions: number
+  total_executed: number
+  total_investment: number // 单位：分
+  total_returned_amount: number // 单位：分
+  settled_cost: number // 单位：分
 }
 
 // ==================== 摊销 ====================
@@ -340,8 +352,8 @@ export interface AmortizationSnapshot {
   activity_id: number
   date: string
   execution_count: number
-  amortization_base: number
-  daily_amount: number
+  amortization_base: number // 单位：分
+  daily_amount: number // 单位：分
 }
 
 // ==================== 报表 ====================
@@ -363,8 +375,8 @@ export interface ActivityReport {
   activity_id: number
   activity_name: string
   campus_name: string
-  total_investment: number
-  total_amortization: number
+  total_investment: number // 单位：分
+  total_amortization: number // 单位：分
   planned_executions: number
   total_executed: number
 }
@@ -373,7 +385,7 @@ export interface ActivityReport {
 export interface DateRangeReportItem {
   date: string
   execution_count: number
-  daily_amount: number
+  daily_amount: number // 单位：分
 }
 
 /** 按校区报表 */
@@ -381,8 +393,8 @@ export interface CampusReport {
   campus_id: number
   campus_name: string
   activity_count: number
-  total_investment: number
-  total_amortization: number
+  total_investment: number // 单位：分
+  total_amortization: number // 单位：分
 }
 
 /** 按品类报表项 */
@@ -390,5 +402,5 @@ export interface CategoryReportItem {
   category_id: number
   category_name: string
   total_quantity: number
-  total_amount: number
+  total_amount: number // 单位：分
 }

@@ -60,6 +60,8 @@
 - **user / campus 模块仅总部管理员可写**：校区和账户的创建、编辑、删除、禁用、重置密码等写操作仅 `hq_admin` 可执行。后端 handler 通过 `checkHQAdmin` 统一拦截（返回 40003），前端 AppLayout 按角色过滤菜单，CampusPage / UserPage 有页面级守卫。List 查询不受限制。详见 memory `[[hq-admin-write-permission]]`。
 - **结算回收算法**：按执行进度比例计算已消耗量（`usedQty = floor(qty × totalExecuted / plannedExecutions)`），未消耗部分回收入库并扣减摊销基数。详见 memory `[[settlement-amortization-formula]]`。
 - **结算单事务保证**：Execute 和 Reverse 操作在单事务中完成（库存变更 + 结算记录 + 摊销重算 + 审计日志），确保原子性和数据一致性。详见 memory `[[settlement-transaction-guarantee]]`。
+- **金额以整数分存储与计算**：所有金额字段（采购总金额/单价、库存单价、结算回收额、回收明细扣减、摊销基数/日摊销、审计影响金额）一律为整数分（后端 `int64`、JSON 输出分），杜绝 float64 二进制尾差（如 `110.00000000000001`）。前端展示统一 `/100`（元）、采购输入 `×100`（分）。存量库由启动迁移 `PRAGMA user_version=1` 一次性 `ROUND(col*100)`。详见 memory `[[amount-in-cents]]`。
+- **摊销舍入规则**：每日摊销 = `基数×当日执行次数 ÷ 计划次数`（向下取整到分），**尾差归最后一个执行日**，保证 `Σ(每日摊销) == round(基数×总执行÷计划)`；结算后基数 = 配发总额 − 已结算回收总额。
 
 ---
 

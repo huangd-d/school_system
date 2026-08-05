@@ -3,7 +3,6 @@ package material
 import (
 	"context"
 	"fmt"
-	"math"
 	"school-system/internal/model"
 	"school-system/pkg/apperror"
 	"time"
@@ -203,7 +202,7 @@ func (s *Service) DeleteCategory(ctx context.Context, id uint, operatorRole stri
 // ---- 采购管理 ----
 
 // Purchase 采购入库（仅总部管理员，创建采购单+库存，事务保护）
-func (s *Service) Purchase(ctx context.Context, materialName string, categoryID uint, quantity int, totalAmount float64, notes string, purchaserID uint, operatorRole string) (*model.Stock, error) {
+func (s *Service) Purchase(ctx context.Context, materialName string, categoryID uint, quantity int, totalAmount int64, notes string, purchaserID uint, operatorRole string) (*model.Stock, error) {
 	if operatorRole != model.RoleHQAdmin {
 		return nil, apperror.ErrMaterialPermDenied
 	}
@@ -222,8 +221,8 @@ func (s *Service) Purchase(ctx context.Context, materialName string, categoryID 
 		return nil, apperror.ErrMaterialCategoryNotExist
 	}
 
-	// 计算单价（保留两位小数）
-	unitPrice := math.Round(totalAmount/float64(quantity)*100) / 100
+	// 计算单价（单位：分，四舍五入到分）
+	unitPrice := (totalAmount + int64(quantity)/2) / int64(quantity)
 
 	if len(notes) > 500 {
 		notes = notes[:500]
@@ -266,7 +265,7 @@ func (s *Service) Purchase(ctx context.Context, materialName string, categoryID 
 			OperationType: model.AuditOpPurchase,
 			EntityType:    "stock",
 			EntityID:      stock.ID,
-			AfterValue:    fmt.Sprintf("name:%s,qty:%d,amount:%.2f", materialName, quantity, totalAmount),
+			AfterValue:    fmt.Sprintf("name:%s,qty:%d,amount:%d(分)", materialName, quantity, totalAmount),
 			ImpactAmount:  totalAmount,
 		}
 		if err := tx.Create(auditLog).Error; err != nil {

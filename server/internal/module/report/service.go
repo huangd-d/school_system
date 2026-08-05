@@ -24,49 +24,49 @@ type Repository interface {
 	FindDistributionAggByCategory(ctx context.Context, start, end time.Time) ([]CategoryAggRow, error)
 }
 
-// CategoryAggRow 品类聚合查询结果行
+// CategoryAggRow 品类聚合查询结果行（金额单位：分）
 type CategoryAggRow struct {
-	CategoryID   uint    `gorm:"column:category_id"`
-	CategoryName string  `gorm:"column:category_name"`
+	CategoryID    uint   `gorm:"column:category_id"`
+	CategoryName  string `gorm:"column:category_name"`
 	TotalQuantity int    `gorm:"column:total_quantity"`
-	TotalAmount  float64 `gorm:"column:total_amount"`
+	TotalAmount   int64  `gorm:"column:total_amount"`
 }
 
 // ---- 报表返回结构体 ----
 
-// ActivityReport 按活动报表
+// ActivityReport 按活动报表（金额单位：分）
 type ActivityReport struct {
-	ActivityID       uint    `json:"activity_id"`
-	ActivityName     string  `json:"activity_name"`
-	CampusName       string  `json:"campus_name"`
-	TotalInvestment  float64 `json:"total_investment"`
-	TotalAmortization float64 `json:"total_amortization"`
+	ActivityID        uint   `json:"activity_id"`
+	ActivityName      string `json:"activity_name"`
+	CampusName        string `json:"campus_name"`
+	TotalInvestment   int64  `json:"total_investment"`
+	TotalAmortization int64  `json:"total_amortization"`
 	PlannedExecutions int    `json:"planned_executions"`
-	TotalExecuted    int     `json:"total_executed"`
+	TotalExecuted     int    `json:"total_executed"`
 }
 
-// DateRangeItem 按日期范围报表项
+// DateRangeItem 按日期范围报表项（金额单位：分）
 type DateRangeItem struct {
-	Date           string  `json:"date"`
-	ExecutionCount int     `json:"execution_count"`
-	DailyAmount    float64 `json:"daily_amount"`
+	Date           string `json:"date"`
+	ExecutionCount int    `json:"execution_count"`
+	DailyAmount    int64  `json:"daily_amount"`
 }
 
-// CampusReport 按校区报表
+// CampusReport 按校区报表（金额单位：分）
 type CampusReport struct {
-	CampusID          uint    `json:"campus_id"`
-	CampusName        string  `json:"campus_name"`
-	ActivityCount     int     `json:"activity_count"`
-	TotalInvestment   float64 `json:"total_investment"`
-	TotalAmortization float64 `json:"total_amortization"`
+	CampusID          uint   `json:"campus_id"`
+	CampusName        string `json:"campus_name"`
+	ActivityCount     int    `json:"activity_count"`
+	TotalInvestment   int64  `json:"total_investment"`
+	TotalAmortization int64  `json:"total_amortization"`
 }
 
-// CategoryReportItem 按品类报表项
+// CategoryReportItem 按品类报表项（金额单位：分）
 type CategoryReportItem struct {
-	CategoryID    uint    `json:"category_id"`
-	CategoryName  string  `json:"category_name"`
-	TotalQuantity int     `json:"total_quantity"`
-	TotalAmount   float64 `json:"total_amount"`
+	CategoryID    uint   `json:"category_id"`
+	CategoryName  string `json:"category_name"`
+	TotalQuantity int    `json:"total_quantity"`
+	TotalAmount   int64  `json:"total_amount"`
 }
 
 // Service 报表/摊销业务逻辑
@@ -92,22 +92,22 @@ func (s *Service) ByActivity(ctx context.Context, activityID uint) (*ActivityRep
 		campus.Name = "未知校区"
 	}
 
-	// 总投资 = Σ(配发量 × 单价)
+	// 总投资 = Σ(配发量 × 单价)（单位：分，整数精确）
 	distributions, err := s.repo.FindDistributionsByActivity(ctx, activityID)
 	if err != nil {
 		return nil, apperror.Newf(apperror.ErrInternal.Code, "查询配发记录失败: %v", err)
 	}
-	var totalInvestment float64
+	var totalInvestment int64
 	for _, d := range distributions {
 		stock, err := s.repo.FindStockByID(ctx, d.StockID)
 		if err != nil {
 			continue // 静默跳过已删除的库存
 		}
-		totalInvestment += float64(d.Quantity) * stock.UnitPrice
+		totalInvestment += int64(d.Quantity) * stock.UnitPrice
 	}
 
 	// 总摊销 = Σ(快照.DailyAmount)
-	var totalAmortization float64
+	var totalAmortization int64
 	snapshots, err := s.repo.FindSnapshots(ctx, activityID, time.Time{}, time.Now())
 	if err == nil {
 		for _, sn := range snapshots {
@@ -193,8 +193,8 @@ func (s *Service) ByCampus(ctx context.Context, campusID uint, start, end time.T
 		return nil, apperror.Newf(apperror.ErrInternal.Code, "查询活动失败: %v", err)
 	}
 
-	var totalInvestment float64
-	var totalAmortization float64
+	var totalInvestment int64
+	var totalAmortization int64
 	activityIDs := make([]uint, 0, len(activities))
 
 	for _, a := range activities {
@@ -205,7 +205,7 @@ func (s *Service) ByCampus(ctx context.Context, campusID uint, start, end time.T
 		for _, d := range distributions {
 			stock, _ := s.repo.FindStockByID(ctx, d.StockID)
 			if stock != nil {
-				totalInvestment += float64(d.Quantity) * stock.UnitPrice
+				totalInvestment += int64(d.Quantity) * stock.UnitPrice
 			}
 		}
 	}

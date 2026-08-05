@@ -67,6 +67,22 @@ func (r *repository) FindStockByID(ctx context.Context, id uint) (*model.Stock, 
 	return &stock, nil
 }
 
+// FindStocksByIDs 批量查询库存（消除 N+1）
+func (r *repository) FindStocksByIDs(ctx context.Context, ids []uint) (map[uint]model.Stock, error) {
+	result := make(map[uint]model.Stock)
+	if len(ids) == 0 {
+		return result, nil
+	}
+	var stocks []model.Stock
+	if err := r.db.WithContext(ctx).Where("id IN ?", ids).Find(&stocks).Error; err != nil {
+		return nil, err
+	}
+	for _, s := range stocks {
+		result[s.ID] = s
+	}
+	return result, nil
+}
+
 // ---- 执行 ----
 
 func (r *repository) SumExecutions(ctx context.Context, activityID uint) (int, error) {

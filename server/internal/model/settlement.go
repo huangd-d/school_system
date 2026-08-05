@@ -8,7 +8,7 @@ type Settlement struct {
 	ActivityID          uint      `gorm:"not null;index" json:"activity_id"`
 	Status              string    `gorm:"size:20;not null;default:'settled'" json:"status"` // settled=已结算 reversed=已回撤
 	OperatorID          uint      `gorm:"not null" json:"operator_id"`
-	TotalReturnedAmount float64   `gorm:"not null" json:"total_returned_amount"` // 本次回收总金额
+	TotalReturnedAmount int64     `gorm:"not null" json:"total_returned_amount"` // 本次回收总金额（单位：分）
 	CreatedAt           time.Time `json:"created_at"`
 }
 
@@ -25,7 +25,7 @@ type RecoveryItem struct {
 	SettlementID  uint      `gorm:"not null;index" json:"settlement_id"`
 	StockID       uint      `gorm:"not null" json:"stock_id"`        // 回收物资ID
 	Quantity      int       `gorm:"not null" json:"quantity"`        // 回收数量
-	CostDeduction float64   `gorm:"not null" json:"cost_deduction"`  // 成本扣减金额
+	CostDeduction int64     `gorm:"not null" json:"cost_deduction"` // 成本扣减金额（单位：分）
 	CreatedAt     time.Time `json:"created_at"`
 }
 

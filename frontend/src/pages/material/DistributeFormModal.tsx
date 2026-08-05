@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
-import { Descriptions, Form, Input, InputNumber, Modal, Select, message } from 'antd'
+import { Descriptions, Form, Input, InputNumber, Select, message } from 'antd'
+import DraggableModal from '@/components/DraggableModal'
 import { useMutation } from '@tanstack/react-query'
 import { distribute } from '@/api/material'
 import type { ActivityListItem, DistributeForm, StockItem } from '@/types'
@@ -53,7 +54,7 @@ export default function DistributeFormModal({ open, stock, activities, onClose, 
     }))
 
   return (
-    <Modal
+    <DraggableModal
       title="派发物资"
       open={open}
       onOk={handleSubmit}
@@ -65,7 +66,7 @@ export default function DistributeFormModal({ open, stock, activities, onClose, 
       <Descriptions column={2} size="small" className="mb-4" bordered>
         <Descriptions.Item label="物资名称">{stock.material_name}</Descriptions.Item>
         <Descriptions.Item label="库存余量">{stock.remaining_qty}</Descriptions.Item>
-        <Descriptions.Item label="单价">¥{stock.unit_price.toFixed(2)}</Descriptions.Item>
+        <Descriptions.Item label="单价">¥{(stock.unit_price / 100).toFixed(2)}</Descriptions.Item>
         <Descriptions.Item label="来源">
           {stock.source === 'purchase' ? '采购入库' : '结算回收'}
         </Descriptions.Item>
@@ -112,6 +113,6 @@ export default function DistributeFormModal({ open, stock, activities, onClose, 
           <Input.TextArea rows={2} placeholder="可选，如：新学期开班需要" />
         </Form.Item>
       </Form>
-    </Modal>
+    </DraggableModal>
   )
 }

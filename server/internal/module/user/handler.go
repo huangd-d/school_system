@@ -79,7 +79,7 @@ func toResp(u model.User) UserResp {
 		Role:      u.Role,
 		CampusID:  u.CampusID,
 		Status:    u.Status,
-		CreatedAt: u.CreatedAt.Format("2006-01-02 15:04:05"),
+		CreatedAt: u.CreatedAt.Format("2006-01-02"),
 	}
 }
 

@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
-import { Modal, Table, Descriptions, Button, message, Spin } from 'antd'
+import { Table, Descriptions, Button, message, Spin } from 'antd'
+import DraggableModal from '@/components/DraggableModal'
 import { DollarOutlined } from '@ant-design/icons'
 import { useMutation } from '@tanstack/react-query'
 import { previewSettlement, executeSettlement } from '@/api/settlement'
-import type { SettlementPreviewItem, ActivityListItem } from '@/types'
+import type { SettlementPreviewItem, SettlementOverviewItem } from '@/types'
 
 interface Props {
   open: boolean
-  activity: ActivityListItem | null
+  activity: SettlementOverviewItem | null
   onClose: () => void
   onSuccess: () => void
 }
@@ -23,21 +24,22 @@ export default function SettlementPreviewModal({ open, activity, onClose, onSucc
   } | null>(null)
 
   useEffect(() => {
-    if (open && activity?.id) {
+    if (open && activity?.activity_id) {
       setLoading(true)
       setPreviewData(null)
-      previewSettlement(activity.id)
+      previewSettlement(activity.activity_id)
         .then(setPreviewData)
         .catch(e => message.error(e.message))
         .finally(() => setLoading(false))
     }
-  }, [open, activity?.id])
+  }, [open, activity?.activity_id])
 
   const executeMutation = useMutation({
-    mutationFn: () => executeSettlement(activity!.id),
+    mutationFn: () => executeSettlement(activity!.activity_id),
     onSuccess: () => {
       message.success('结算完成')
       onSuccess()
+      onClose()
     },
     onError: (e: Error) => message.error(e.message),
   })
@@ -51,19 +53,19 @@ export default function SettlementPreviewModal({ open, activity, onClose, onSucc
       title: '单价',
       dataIndex: 'unit_price',
       width: 100,
-      render: (v: number) => `¥${v.toFixed(2)}`,
+      render: (v: number) => `¥${(v / 100).toFixed(2)}`,
     },
     {
       title: '扣减金额',
       dataIndex: 'cost_deduction',
       width: 120,
-      render: (v: number) => `¥${v.toFixed(2)}`,
+      render: (v: number) => `¥${(v / 100).toFixed(2)}`,
     },
   ]
 
   return (
-    <Modal
-      title={`结算预览 — ${activity?.name ?? ''}`}
+    <DraggableModal
+      title={`结算预览 — ${activity?.activity_name ?? ''}`}
       open={open}
       onCancel={onClose}
       width={700}
@@ -90,7 +92,7 @@ export default function SettlementPreviewModal({ open, activity, onClose, onSucc
               {previewData.total_executed} / {previewData.planned_executions}
             </Descriptions.Item>
             <Descriptions.Item label="回收总金额">
-              ¥{previewData.total_returned_amount.toFixed(2)}
+              ¥{(previewData.total_returned_amount / 100).toFixed(2)}
             </Descriptions.Item>
             <Descriptions.Item label="回收物资数">
               {previewData.items.filter(i => i.recovery_qty > 0).length} 种
@@ -110,7 +112,7 @@ export default function SettlementPreviewModal({ open, activity, onClose, onSucc
                     <strong>回收总金额：</strong>
                   </Table.Summary.Cell>
                   <Table.Summary.Cell index={1}>
-                    <strong style={{ color: '#cf1322' }}>¥{previewData.total_returned_amount.toFixed(2)}</strong>
+                    <strong style={{ color: '#cf1322' }}>¥{(previewData.total_returned_amount / 100).toFixed(2)}</strong>
                   </Table.Summary.Cell>
                 </Table.Summary.Row>
               ) : null
@@ -118,6 +120,6 @@ export default function SettlementPreviewModal({ open, activity, onClose, onSucc
           />
         </>
       ) : null}
-    </Modal>
+    </DraggableModal>
   )
 }

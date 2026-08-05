@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Modal, Table, Tag, Button, Popconfirm, message, Space, Descriptions } from 'antd'
+import { Table, Tag, Button, Popconfirm, message, Descriptions } from 'antd'
+import DraggableModal from '@/components/DraggableModal'
 import { UndoOutlined } from '@ant-design/icons'
 import { useMutation } from '@tanstack/react-query'
 import { reverseSettlement } from '@/api/settlement'
@@ -39,7 +40,7 @@ export default function SettlementHistoryModal({ open, activityId, activityName,
   })
 
   return (
-    <Modal
+    <DraggableModal
       title={`「${activityName}」结算记录`}
       open={open}
       onCancel={onClose}
@@ -64,7 +65,7 @@ export default function SettlementHistoryModal({ open, activityId, activityName,
             title: '回收总金额',
             dataIndex: 'total_returned_amount',
             width: 120,
-            render: (v: number) => `¥${v.toFixed(2)}`,
+            render: (v: number) => `¥${(v / 100).toFixed(2)}`,
           },
           { title: '结算时间', dataIndex: 'created_at', width: 170 },
           {
@@ -90,11 +91,11 @@ export default function SettlementHistoryModal({ open, activityId, activityName,
           expandedRowRender: (record: Settlement) => (
             <Descriptions size="small" column={2}>
               <Descriptions.Item label="操作人ID">{record.operator_id}</Descriptions.Item>
-              <Descriptions.Item label="回收金额">¥{record.total_returned_amount.toFixed(2)}</Descriptions.Item>
+              <Descriptions.Item label="回收金额">¥{(record.total_returned_amount / 100).toFixed(2)}</Descriptions.Item>
             </Descriptions>
           ),
         }}
       />
-    </Modal>
+    </DraggableModal>
   )
 }

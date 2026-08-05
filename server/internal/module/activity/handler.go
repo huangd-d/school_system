@@ -119,8 +119,8 @@ func toActivityResp(a model.Activity) ActivityResp {
 		EndDate:           a.EndDate.Format("2006-01-02"),
 		Status:            a.Status,
 		CreatedBy:         a.CreatedBy,
-		CreatedAt:         a.CreatedAt.Format("2006-01-02 15:04:05"),
-		UpdatedAt:         a.UpdatedAt.Format("2006-01-02 15:04:05"),
+		CreatedAt:         a.CreatedAt.Format("2006-01-02"),
+		UpdatedAt:         a.UpdatedAt.Format("2006-01-02"),
 	}
 }
 
@@ -134,8 +134,8 @@ func toActivityListResp(s ActivityWithSummary) ActivityListResp {
 		EndDate:           s.EndDate.Format("2006-01-02"),
 		Status:            s.Status,
 		CreatedBy:         s.CreatedBy,
-		CreatedAt:         s.CreatedAt.Format("2006-01-02 15:04:05"),
-		UpdatedAt:         s.UpdatedAt.Format("2006-01-02 15:04:05"),
+		CreatedAt:         s.CreatedAt.Format("2006-01-02"),
+		UpdatedAt:         s.UpdatedAt.Format("2006-01-02"),
 		ContactIDs:        s.ContactIDs,
 		TotalExecuted:     s.TotalExecuted,
 	}
@@ -159,7 +159,7 @@ func toActivityDetailResp(d ActivityDetail) ActivityDetailResp {
 			ActivityID: e.ActivityID,
 			Count:      e.Count,
 			RecordedBy: e.RecordedBy,
-			CreatedAt:  e.CreatedAt.Format("2006-01-02 15:04:05"),
+			CreatedAt:  e.CreatedAt.Format("2006-01-02"),
 		})
 	}
 
@@ -172,8 +172,8 @@ func toActivityDetailResp(d ActivityDetail) ActivityDetailResp {
 		EndDate:           d.EndDate.Format("2006-01-02"),
 		Status:            d.Status,
 		CreatedBy:         d.CreatedBy,
-		CreatedAt:         d.CreatedAt.Format("2006-01-02 15:04:05"),
-		UpdatedAt:         d.UpdatedAt.Format("2006-01-02 15:04:05"),
+		CreatedAt:         d.CreatedAt.Format("2006-01-02"),
+		UpdatedAt:         d.UpdatedAt.Format("2006-01-02"),
 		Contacts:          contacts,
 		Executions:        executions,
 		TotalExecuted:     d.TotalExecuted,

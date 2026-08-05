@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
-import { Form, Input, InputNumber, Modal, Select, message } from 'antd'
+import { Form, Input, InputNumber, Select, message } from 'antd'
+import DraggableModal from '@/components/DraggableModal'
 import { useMutation } from '@tanstack/react-query'
 import { createPurchase } from '@/api/material'
 import type { MaterialCategory, PurchaseForm } from '@/types'
@@ -37,14 +38,15 @@ export default function PurchaseFormModal({ open, categories, onClose, onSuccess
 
   const handleSubmit = () => {
     form.validateFields().then((values: PurchaseForm) => {
-      mutation.mutate(values)
+      // 总金额以「元」输入，提交时转「分」（后端金额单位：分）
+      mutation.mutate({ ...values, total_amount: Math.round(values.total_amount * 100) })
     })
   }
 
   const categoryOptions = categories.map((c) => ({ label: c.name, value: c.id }))
 
   return (
-    <Modal
+    <DraggableModal
       title="新建采购"
       open={open}
       onOk={handleSubmit}
@@ -81,7 +83,7 @@ export default function PurchaseFormModal({ open, categories, onClose, onSuccess
           label="采购数量"
           rules={[{ required: true, message: '请输入数量' }]}
         >
-          <InputNumber min={1} precision={0} placeholder="正整数" className="w-full" />
+          <InputNumber min={1} precision={0} placeholder="正整数" style={{ width: '100%' }} />
         </Form.Item>
         <Form.Item
           name="total_amount"
@@ -94,7 +96,7 @@ export default function PurchaseFormModal({ open, categories, onClose, onSuccess
             precision={2}
             prefix="¥"
             placeholder="大于0"
-            className="w-full"
+            style={{ width: '100%' }}
           />
         </Form.Item>
         <Form.Item
@@ -105,6 +107,6 @@ export default function PurchaseFormModal({ open, categories, onClose, onSuccess
           <Input.TextArea rows={3} placeholder="可选备注" />
         </Form.Item>
       </Form>
-    </Modal>
+    </DraggableModal>
   )
 }

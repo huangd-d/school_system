@@ -83,3 +83,8 @@ dist-ssr/
 
 # Tailwind CSS（独立 CLI 模式缓存）
 .tailwindcss/
+
+# ============================================================
+# Reasonix 本地工具配置（不进仓库）
+.reasonix/
+reasonix.toml

@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
-import { Form, Input, Modal, Select, message } from 'antd'
+import { Form, Input, Select, message } from 'antd'
+import DraggableModal from '@/components/DraggableModal'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { updateUser } from '@/api/user'
 import { listCampuses } from '@/api/campus'
@@ -55,7 +56,7 @@ export default function EditUserModal({ open, user, onClose, onSuccess }: Props)
   }
 
   return (
-    <Modal
+    <DraggableModal
       title={`编辑账户 - ${user?.username}`}
       open={open}
       onOk={() => form.submit()}
@@ -91,6 +92,6 @@ export default function EditUserModal({ open, user, onClose, onSuccess }: Props)
           />
         </Form.Item>
       </Form>
-    </Modal>
+    </DraggableModal>
   )
 }

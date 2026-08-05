@@ -8,7 +8,6 @@ import CategoryTab from './CategoryTab'
 import PurchaseStockTab from './PurchaseStockTab'
 import DistributeTab from './DistributeTab'
 import DistributionRecordsTab from './DistributionRecordsTab'
-import type { MaterialCategory, ActivityListItem } from '@/types'
 
 export default function MaterialPage() {
   const user = useAuthStore((s) => s.user)
@@ -19,7 +18,7 @@ export default function MaterialPage() {
     queryFn: listCategories,
   })
 
-  const { data: activities = [], isLoading: actLoading } = useQuery({
+  const { data: activities = [] } = useQuery({
     queryKey: ['activities'],
     queryFn: listActivities,
   })

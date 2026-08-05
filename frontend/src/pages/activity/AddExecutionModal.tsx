@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
-import { Form, InputNumber, Modal, message, Descriptions } from 'antd'
+import { Form, InputNumber, message, Descriptions } from 'antd'
+import DraggableModal from '@/components/DraggableModal'
 import { useMutation } from '@tanstack/react-query'
 import { addExecution } from '@/api/activity'
 import type { ActivityListItem, AddExecutionForm } from '@/types'
@@ -53,47 +54,40 @@ export default function AddExecutionModal({ open, activity, onClose, onSuccess }
   const maxCount = activity.planned_executions - activity.total_executed
 
   return (
-    <Modal
+    <DraggableModal
       title="录入执行次数"
       open={open}
       onOk={() => form.submit()}
       onCancel={handleClose}
       confirmLoading={addMutation.isPending}
       destroyOnHidden
+      width={600}
     >
-      <Descriptions
-        size="small"
-        column={1}
-        className="mb-4"
-        items={[
-          { label: '活动名称', children: activity.name },
-          { label: '计划次数', children: activity.planned_executions },
-          { label: '已执行次数', children: activity.total_executed },
-          { label: '剩余可录', children: maxCount },
-        ]}
-      />
-
-      <Form
-        form={form}
-        layout="vertical"
-        onFinish={handleFinish}
-      >
-        <Form.Item
-          name="count"
-          label="本次执行次数"
-          rules={[
-            { required: true, message: '请输入执行次数' },
-            { type: 'number', min: 1, message: '必须大于0' },
-          ]}
-        >
-          <InputNumber
-            min={1}
-            max={maxCount}
-            className="w-full"
-            placeholder={`1 ~ ${maxCount}`}
-          />
-        </Form.Item>
+      <Form form={form} onFinish={handleFinish}>
+        <Descriptions size="small" column={1} className="mb-2">
+          <Descriptions.Item label="活动名称">{activity.name}</Descriptions.Item>
+          <Descriptions.Item label="已执行/未执行/总次数">
+            {activity.total_executed} / {maxCount} / {activity.planned_executions}
+          </Descriptions.Item>
+          <Descriptions.Item label="本次执行次数" style={{ alignItems: 'center' }}>
+            <Form.Item
+              name="count"
+              rules={[
+                { required: true, message: '请输入执行次数' },
+                { type: 'number', min: 1, message: '必须大于0' },
+              ]}
+              style={{ marginBottom: 0 }}
+            >
+              <InputNumber
+                min={1}
+                max={maxCount}
+                style={{ width: '100%' }}
+                placeholder={`1 ~ ${maxCount}`}
+              />
+            </Form.Item>
+          </Descriptions.Item>
+        </Descriptions>
       </Form>
-    </Modal>
+    </DraggableModal>
   )
 }
